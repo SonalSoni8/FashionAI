@@ -1,19 +1,20 @@
-import '../../../../core/errors/failure.dart';
-import '../models/user_entity.dart';
+import '../entities/auth_user_entity.dart';
 
 abstract class IAuthRepository {
-  Future<Result<UserEntity>> loginWithEmail({
+  Future<AuthUserEntity> signInWithEmailAndPassword({
     required String email,
     required String password,
   });
 
-  Future<Result<UserEntity>> signUpWithEmail({
+  Future<AuthUserEntity> signUpWithEmailAndPassword({
     required String email,
     required String password,
-    required String name,
+    String? name,
   });
 
-  Future<Result<UserEntity?>> getCurrentUser();
+  Future<void> signOut();
 
-  Future<Result<void>> logout();
+  Stream<AuthUserEntity> get authStateChanges;
+
+  AuthUserEntity get currentUser;
 }

@@ -1,358 +1,305 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/aura_colors.dart';
 import '../../../core/theme/aura_typography.dart';
 import '../../../core/widgets/glass_card.dart';
-import '../../../core/widgets/morphing_button.dart';
-import '../../../core/widgets/spring_slide.dart';
-import '../../../core/router/app_router.dart';
-import '../../profile_scan/providers/user_profile_provider.dart';
+import '../../aura_dna/providers/aura_dna_provider.dart';
 
-class DashboardView extends ConsumerWidget {
+class DashboardView extends ConsumerStatefulWidget {
   const DashboardView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(userProfileProvider);
+  ConsumerState<DashboardView> createState() => _DashboardViewState();
+}
+
+class _DashboardViewState extends ConsumerState<DashboardView> {
+  int _selectedBottomNavIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final dna = ref.watch(auraDnaProvider);
 
     return Scaffold(
       backgroundColor: AuraColors.backgroundDark,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAlignment.start,
             children: [
-              // Top Header with User Greeting & Profile Avatar Glow
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAlignment.start,
-                    children: [
-                      Text(
-                        "GOOD MORNING",
-                        style: AuraTypography.caption(isDark: true).copyWith(
-                          letterSpacing: 2.0,
-                          color: AuraColors.textMutedDark,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        profile.name,
-                        style: AuraTypography.headingMedium(isDark: true),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: AuraColors.auraGradientPrimary,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AuraColors.auraViolet.withOpacity(0.4),
-                          blurRadius: 16,
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.person_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Weather & Daily Recommendation Main Hero Card
-              SpringSlide(
-                child: GlassCard(
-                  borderRadius: 32,
-                  padding: const EdgeInsets.all(24),
-                  isGlowing: true,
-                  glowColor: AuraColors.auraViolet,
-                  child: Column(
-                    crossAxisAlignment: CrossAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              color: AuraColors.auraViolet.withOpacity(0.2),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.wb_sunny_rounded,
-                                  color: AuraColors.auraAmber,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "72°F · Clear Skies",
-                                  style: AuraTypography.caption(isDark: true).copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            "98% MATCH",
-                            style: AuraTypography.caption(isDark: true).copyWith(
-                              color: AuraColors.auraEmerald,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        "Today's Curated Outfit",
-                        style: AuraTypography.headingLarge(isDark: true).copyWith(
-                          fontSize: 24,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Unstructured Charcoal Linen Blazer + Off-White Supima Tee + Slim Dark Trousers + Minimalist Leather Sneakers.",
-                        style: AuraTypography.bodyLarge(isDark: true),
-                      ),
-                      const SizedBox(height: 20),
-                      MorphingButton(
-                        text: "Ask AI Stylist to Modify",
-                        icon: Icons.auto_awesome_rounded,
-                        style: MorphingButtonStyle.glassOutline,
-                        height: 48,
-                        onPressed: () => context.push(AppRoutes.aiStylist),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Core Feature Navigation Grid
-              Text("Stylist Workspaces", style: AuraTypography.title(isDark: true)),
-              const SizedBox(height: 14),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: GlassCard(
-                      borderRadius: 24,
-                      padding: const EdgeInsets.all(18),
-                      onTap: () => context.push(AppRoutes.outfitRating),
-                      child: Column(
-                        crossAxisAlignment: CrossAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AuraColors.auraRose.withOpacity(0.15),
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt_rounded,
-                              color: AuraColors.auraRose,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            "Rate Outfit",
-                            style: AuraTypography.title(isDark: true).copyWith(fontSize: 15),
-                          ),
-                          const SizedBox(height: 2),
-                          Text("AI Score & Pros/Cons", style: AuraTypography.caption(isDark: true)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GlassCard(
-                      borderRadius: 24,
-                      padding: const EdgeInsets.all(18),
-                      onTap: () => context.push(AppRoutes.wardrobe),
-                      child: Column(
-                        crossAxisAlignment: CrossAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AuraColors.auraCyan.withOpacity(0.15),
-                            ),
-                            child: const Icon(
-                              Icons.checkroom_rounded,
-                              color: AuraColors.auraCyan,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            "Digital Closet",
-                            style: AuraTypography.title(isDark: true).copyWith(fontSize: 15),
-                          ),
-                          const SizedBox(height: 2),
-                          Text("42 Owned Items", style: AuraTypography.caption(isDark: true)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: GlassCard(
-                      borderRadius: 24,
-                      padding: const EdgeInsets.all(18),
-                      onTap: () => context.push(AppRoutes.occasionPlanner),
-                      child: Column(
-                        crossAxisAlignment: CrossAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AuraColors.auraViolet.withOpacity(0.15),
-                            ),
-                            child: const Icon(
-                              Icons.event_seat_rounded,
-                              color: AuraColors.auraViolet,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            "Occasions",
-                            style: AuraTypography.title(isDark: true).copyWith(fontSize: 15),
-                          ),
-                          const SizedBox(height: 2),
-                          Text("Weddings & Office", style: AuraTypography.caption(isDark: true)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GlassCard(
-                      borderRadius: 24,
-                      padding: const EdgeInsets.all(18),
-                      onTap: () => context.push(AppRoutes.packingAssistant),
-                      child: Column(
-                        crossAxisAlignment: CrossAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AuraColors.auraAmber.withOpacity(0.15),
-                            ),
-                            child: const Icon(
-                              Icons.luggage_rounded,
-                              color: AuraColors.auraAmber,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            "Packing List",
-                            style: AuraTypography.title(isDark: true).copyWith(fontSize: 15),
-                          ),
-                          const SizedBox(height: 2),
-                          Text("Smart Trip Checklist", style: AuraTypography.caption(isDark: true)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Shopping Link Advisor Action Banner
+              // Hero User Header Card
               GlassCard(
-                borderRadius: 24,
-                padding: const EdgeInsets.all(18),
-                onTap: () => context.push(AppRoutes.shoppingAdvisor),
+                borderRadius: 28,
+                padding: const EdgeInsets.all(22),
+                isGlowing: true,
+                glowColor: AuraColors.auraViolet,
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      width: 54,
+                      height: 54,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AuraColors.auraEmerald.withOpacity(0.15),
+                        gradient: AuraColors.auraGradientPrimary,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AuraColors.auraViolet.withOpacity(0.4),
+                            blurRadius: 16,
+                          ),
+                        ],
                       ),
-                      child: const Icon(
-                        Icons.shopping_bag_outlined,
-                        color: AuraColors.auraEmerald,
-                        size: 24,
+                      child: const Center(
+                        child: Text(
+                          "AM",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAlignment.start,
                         children: [
-                          Text(
-                            "Shopping Link Advisor",
-                            style: AuraTypography.title(isDark: true).copyWith(fontSize: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                dna.userName,
+                                style: AuraTypography.headingMedium(isDark: true),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: AuraColors.auraEmerald.withOpacity(0.2),
+                                ),
+                                child: Text(
+                                  "${dna.confidenceScore}% CONFIDENCE",
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    color: AuraColors.auraEmerald,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 2),
                           Text(
-                            "Paste item URL to evaluate Buy vs Skip before purchasing.",
-                            style: AuraTypography.bodyMedium(isDark: true),
+                            "Mannequin ID: ${dna.twinId} · ${dna.bodyShape.split(' ')[0]}",
+                            style: AuraTypography.caption(isDark: true),
                           ),
                         ],
                       ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      color: AuraColors.textMutedDark,
-                      size: 16,
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+
+              Text(
+                "Aura Fashion OS Workspace",
+                style: AuraTypography.title(isDark: true),
+              ),
+              const SizedBox(height: 14),
+
+              // Feature Launcher Cards Grid (All 10 Core Features)
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                childAspectRatio: 1.1,
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 14,
+                children: [
+                  _buildLauncherCard(
+                    title: "Aura DNA™ Master",
+                    subtitle: "Unified 16-point genome",
+                    icon: Icons.fingerprint_rounded,
+                    color: AuraColors.auraViolet,
+                    route: AppRoutes.auraDna,
+                  ),
+                  _buildLauncherCard(
+                    title: "Digital Twin",
+                    subtitle: "3-Angle 3D Pose Mesh",
+                    icon: Icons.camera_alt_rounded,
+                    color: AuraColors.auraCyan,
+                    route: AppRoutes.digitalTwinOnboarding,
+                  ),
+                  _buildLauncherCard(
+                    title: "Colour Passport",
+                    subtitle: "Deep Autumn Palette",
+                    icon: Icons.palette_rounded,
+                    color: AuraColors.auraRose,
+                    route: AppRoutes.colourPassport,
+                  ),
+                  _buildLauncherCard(
+                    title: "Digital Closet",
+                    subtitle: "42 Owned Garments",
+                    icon: Icons.checkroom_rounded,
+                    color: AuraColors.auraEmerald,
+                    route: AppRoutes.wardrobe,
+                  ),
+                  _buildLauncherCard(
+                    title: "Virtual Try-On",
+                    subtitle: "Landmark Fitting Studio",
+                    icon: Icons.accessibility_new_rounded,
+                    color: AuraColors.auraViolet,
+                    route: AppRoutes.virtualTryOn,
+                  ),
+                  _buildLauncherCard(
+                    title: "AI Stylist Chat",
+                    subtitle: "Gemini Fashion AI",
+                    icon: Icons.sparkles,
+                    color: AuraColors.auraRose,
+                    route: AppRoutes.aiStylist,
+                  ),
+                  _buildLauncherCard(
+                    title: "Shopping Advisor",
+                    subtitle: "BUY vs SKIP Verdict",
+                    icon: Icons.shopping_bag_rounded,
+                    color: AuraColors.auraAmber,
+                    route: AppRoutes.shoppingAdvisor,
+                  ),
+                  _buildLauncherCard(
+                    title: "Outfit Calendar",
+                    subtitle: "8 Occasion Slots",
+                    icon: Icons.calendar_month_rounded,
+                    color: AuraColors.auraCyan,
+                    route: AppRoutes.occasionPlanner,
+                  ),
+                  _buildLauncherCard(
+                    title: "Closet Analytics",
+                    subtitle: "96 / 100 Closet Score",
+                    icon: Icons.bar_chart_rounded,
+                    color: AuraColors.auraEmerald,
+                    route: AppRoutes.wardrobeAnalytics,
+                  ),
+                  _buildLauncherCard(
+                    title: "Social Network",
+                    subtitle: "Creator & Celebrity Hub",
+                    icon: Icons.explore_rounded,
+                    color: AuraColors.auraViolet,
+                    route: AppRoutes.socialFashion,
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
             ],
           ),
         ),
       ),
 
-      // Floating AI Stylist FAB Trigger
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AuraColors.auraViolet,
-        onPressed: () => context.push(AppRoutes.aiStylist),
-        icon: const Icon(Icons.sparkles, color: Colors.white),
-        label: Text(
-          "Ask Aura AI",
-          style: AuraTypography.labelButton(isDark: true).copyWith(
-            color: Colors.white,
+      // Glassmorphic Bottom Navigation Bar
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.85),
+          border: const Border(
+            top: BorderSide(color: AuraColors.glassBorderDark),
           ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedBottomNavIndex,
+          onTap: (index) {
+            setState(() => _selectedBottomNavIndex = index);
+            if (index == 0) context.push(AppRoutes.virtualTryOn);
+            if (index == 1) context.push(AppRoutes.wardrobe);
+            if (index == 2) context.push(AppRoutes.aiStylist);
+            if (index == 3) context.push(AppRoutes.socialFashion);
+            if (index == 4) context.push(AppRoutes.auraDna);
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AuraColors.auraViolet,
+          unselectedItemColor: Colors.white54,
+          selectedFontSize: 10,
+          unselectedFontSize: 10,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.accessibility_new_rounded),
+              label: "Try-On",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.checkroom_rounded),
+              label: "Closet",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.sparkles),
+              label: "AI Stylist",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.explore_rounded),
+              label: "Social",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.fingerprint_rounded),
+              label: "Aura DNA",
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLauncherCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required String route,
+  }) {
+    return GestureDetector(
+      onTap: () => context.push(route),
+      child: GlassCard(
+        borderRadius: 22,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color.withOpacity(0.18),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            Column(
+              crossAxisAlignment: CrossAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraTypography.title(isDark: true).copyWith(
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraTypography.caption(isDark: true).copyWith(
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

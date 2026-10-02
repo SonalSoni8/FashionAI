@@ -1,3 +1,4 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import '../../../core/theme/aura_colors.dart';
 import '../../../core/theme/aura_typography.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/morphing_button.dart';
+import '../../../core/widgets/real_camera_preview_widget.dart';
 import '../../../core/router/app_router.dart';
 import '../providers/user_profile_provider.dart';
 
@@ -21,6 +23,8 @@ class _FaceScanViewState extends ConsumerState<FaceScanView>
   late Animation<double> _scanLineAnimation;
   bool _isScanning = false;
   bool _scanComplete = false;
+  bool _useLiveCamera = true;
+  String? _capturedFaceImagePath;
 
   final List<Map<String, String>> _metrics = [
     {"label": "Face Shape", "value": "Angular Oval (96% symmetry)"},
@@ -57,6 +61,7 @@ class _FaceScanViewState extends ConsumerState<FaceScanView>
       setState(() {
         _isScanning = false;
         _scanComplete = true;
+        _useLiveCamera = false;
       });
     }
   }
@@ -117,7 +122,7 @@ class _FaceScanViewState extends ConsumerState<FaceScanView>
               ),
               const SizedBox(height: 24),
 
-              // Camera Viewfinder Simulation Frame
+              // Camera Viewfinder Frame
               Expanded(
                 child: Center(
                   child: AspectRatio(
@@ -125,7 +130,7 @@ class _FaceScanViewState extends ConsumerState<FaceScanView>
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Viewfinder Glass Card Container
+                        // Viewfinder Container
                         GlassCard(
                           borderRadius: 32,
                           isGlowing: _isScanning || _scanComplete,
@@ -135,16 +140,27 @@ class _FaceScanViewState extends ConsumerState<FaceScanView>
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              // Mock face portrait outline
-                              Icon(
-                                Icons.face_retouching_natural_rounded,
-                                size: 160,
-                                color: _scanComplete
-                                    ? AuraColors.auraEmerald.withOpacity(0.6)
-                                    : AuraColors.auraViolet.withOpacity(0.4),
-                              ),
+                              if (_useLiveCamera)
+                                RealCameraPreviewWidget(
+                                  initialDirection: CameraLensDirection.front,
+                                  onPictureTaken: (path) {
+                                    setState(() {
+                                      _capturedFaceImagePath = path;
+                                    });
+                                    _triggerScan();
+                                  },
+                                )
+                              else ...[
+                                Icon(
+                                  Icons.face_retouching_natural_rounded,
+                                  size: 160,
+                                  color: _scanComplete
+                                      ? AuraColors.auraEmerald.withOpacity(0.6)
+                                      : AuraColors.auraViolet.withOpacity(0.4),
+                                ),
+                              ],
 
-                              // Scanning laser beam line animation
+                              // Scanning laser beam line animation overlay
                               if (_isScanning)
                                 AnimatedBuilder(
                                   animation: _scanLineAnimation,

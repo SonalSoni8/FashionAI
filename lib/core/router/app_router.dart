@@ -15,12 +15,24 @@ import '../../features/occasion_plan/presentation/occasion_planner_view.dart';
 import '../../features/packing_assist/presentation/packing_assistant_view.dart';
 import '../../features/shopping_advisor/presentation/shopping_advisor_view.dart';
 import '../../features/virtual_tryon/presentation/virtual_tryon_view.dart';
+import '../../features/digital_twin/presentation/digital_twin_onboarding_view.dart';
+import '../../features/colour_passport/presentation/colour_passport_view.dart';
+import '../../features/wardrobe_analytics/presentation/wardrobe_analytics_view.dart';
+import '../../features/social_fashion/presentation/social_fashion_view.dart';
+import '../../features/aura_dna/presentation/aura_dna_view.dart';
+import '../../features/dashboard/presentation/dashboard_view.dart';
 
 class AppRoutes {
   static const String splash = '/';
   static const String onboarding = '/onboarding';
   static const String auth = '/auth';
+  static const String digitalTwinOnboarding = '/digital-twin-onboarding';
+  static const String colourPassport = '/colour-passport';
+  static const String wardrobeAnalytics = '/wardrobe-analytics';
+  static const String socialFashion = '/social-fashion';
+  static const String auraDna = '/aura-dna';
   static const String createProfile = '/create-profile';
+
   static const String faceScan = '/face-scan';
   static const String bodyScan = '/body-scan';
   static const String skinTone = '/skin-tone';
@@ -35,8 +47,12 @@ class AppRoutes {
 }
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: AppRoutes.splash,
+  initialLocation: AppRoutes.dashboard,
   routes: [
+    GoRoute(
+      path: AppRoutes.dashboard,
+      builder: (context, state) => const DashboardView(),
+    ),
     GoRoute(
       path: AppRoutes.splash,
       builder: (context, state) => const SplashView(),
@@ -55,6 +71,46 @@ final GoRouter appRouter = GoRouter(
         context,
         state,
         const AuthView(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.digitalTwinOnboarding,
+      pageBuilder: (context, state) => _buildFadeTransition(
+        context,
+        state,
+        const DigitalTwinOnboardingView(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.colourPassport,
+      pageBuilder: (context, state) => _buildSlideUpTransition(
+        context,
+        state,
+        const ColourPassportView(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.wardrobeAnalytics,
+      pageBuilder: (context, state) => _buildFadeTransition(
+        context,
+        state,
+        const WardrobeAnalyticsView(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.socialFashion,
+      pageBuilder: (context, state) => _buildSlideUpTransition(
+        context,
+        state,
+        const SocialFashionView(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.auraDna,
+      pageBuilder: (context, state) => _buildFadeTransition(
+        context,
+        state,
+        const AuraDnaView(),
       ),
     ),
     GoRoute(

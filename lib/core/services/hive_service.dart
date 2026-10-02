@@ -41,4 +41,17 @@ class HiveService {
   static Future<void> saveUserProfile(Map<String, dynamic> data) async {
     await profileBox.put('user_data', data);
   }
+
+  static List<Map<String, dynamic>> get getWardrobeItems {
+    final raw = wardrobeBox.get('items', defaultValue: []);
+    if (raw is List) {
+      return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    }
+    return [];
+  }
+
+  static Future<void> saveWardrobeItems(List<Map<String, dynamic>> items) async {
+    await wardrobeBox.put('items', items);
+  }
 }
+

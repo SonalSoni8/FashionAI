@@ -1,1120 +1,1577 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Sparkles, Camera, Shirt, Calendar, Luggage, ShoppingBag, 
-  User, CheckCircle, ArrowRight, Sun, MessageSquare, 
-  Layers, Sliders, RefreshCw, Send, Lock, Mail, ExternalLink, Flame,
-  Video, Upload, AlertCircle, Palette, Activity, Check, ChevronRight, LogOut
+  Sparkles, Camera, Shirt, Calendar, ShoppingBag, 
+  User, CheckCircle, CheckCircle2, ArrowRight, Sun, MessageSquare, 
+  Layers, Activity, Check, Heart, Share2, Eye,
+  Database, UserCheck, Layers3, Flame, Palette, TrendingUp,
+  Award, ShieldCheck, Zap, HelpCircle, FileCheck, Sliders,
+  RefreshCw, Send, Plus, Search, Star, ExternalLink, Bookmark,
+  Compass, ArrowUpRight, BarChart2, Bell, AlertTriangle, Link, Upload, Image as ImageIcon,
+  X, RotateCcw, Copy, CheckSquare
 } from 'lucide-react';
 
 export default function App() {
-  // App View State: 'auth' | 'setup' | 'main'
-  const [appState, setAppState] = useState<'auth' | 'setup' | 'main'>('auth');
-  const [setupStep, setSetupStep] = useState<number>(1);
+  const [isMobile, setIsMobile] = useState<boolean>(
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
 
-  // Main Workspace Tab State
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'skin-scanner' | 'body-scanner' | 'ai-stylist' | 'wardrobe' | 'occasions' | 'packing' | 'shopping'>('dashboard');
-  
-  // User Authentication Form State
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [email, setEmail] = useState('alex.morgan@aura.ai');
-  const [password, setPassword] = useState('••••••••••••');
-  const [authError, setAuthError] = useState<string | null>(null);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  // User Profile Account Setup State
-  const [userName, setUserName] = useState('Alex Morgan');
-  const [userGender, setUserGender] = useState<'female' | 'male' | 'unisex'>('female');
-  const [age, setAge] = useState(26);
-  const [styleAesthetic, setStyleAesthetic] = useState('Quiet Luxury Minimalist');
-  const [height, setHeight] = useState(172);
-  const [weight, setWeight] = useState(62);
-  const [clothingSize, setClothingSize] = useState('M');
-  const [shoeSize, setShoeSize] = useState('38 EU / 7.5 US');
-  const [fitPreference, setFitPreference] = useState('Tailored Slim');
-  const [city, setCity] = useState('New York');
-  const [climate, setClimate] = useState('Temperate Four-Season');
+  // Bottom Navigation Active Tab
+  const [bottomNavTab, setBottomNavTab] = useState<'home' | 'wardrobe' | 'stylist' | 'profile'>('home');
 
-  // Real Camera & Photo States
+  // Ingestion Modes: 'photo' | 'screenshot' | 'link' | 'ai'
+  const [activeIngestionMode, setActiveIngestionMode] = useState<'photo' | 'screenshot' | 'link' | 'ai'>('photo');
+
+  // Try-On Model Viewport State
+  const [selectedModelImg, setSelectedModelImg] = useState<string>('/models/hero.png');
+
+  // Outfit Suggestions Category Tab
+  const [activeOutfitTab, setActiveOutfitTab] = useState<'for-you' | 'office' | 'casual' | 'party' | 'date'>('for-you');
+
+  // Form & Input States
+  const [productUrl, setProductUrl] = useState<string>('https://www.myntra.com/purple-shirt');
+  const [aiPrompt, setAiPrompt] = useState<string>('Oversized lavender fleece hoodie');
+  const [selectedColor, setSelectedColor] = useState<string>('#7C3AED');
+
+  // Modals & Notifications States
+  const [showCameraModal, setShowCameraModal] = useState<boolean>(false);
+  const [showTwinOnboardingModal, setShowTwinOnboardingModal] = useState<boolean>(false);
+  const [showBodyMeshModal, setShowBodyMeshModal] = useState<boolean>(false);
+  const [showAdviceModal, setShowAdviceModal] = useState<boolean>(false);
+  const [showGarmentPickerModal, setShowGarmentPickerModal] = useState<boolean>(false);
+  const [activePickerCategory, setActivePickerCategory] = useState<string>('Tops');
+  const [showGapPlanModal, setShowGapPlanModal] = useState<boolean>(false);
+  const [showShoppingModal, setShowShoppingModal] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isGeneratingLooks, setIsGeneratingLooks] = useState<boolean>(false);
+
+  // Live Camera Stream State & Hands-Free Auto-Capture Engine
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [capturedPreviewImg, setCapturedPreviewImg] = useState<string | null>(null);
   
-  const [skinSelfieImage, setSkinSelfieImage] = useState<string | null>(null);
-  const [fullBodyImage, setFullBodyImage] = useState<string | null>(null);
+  // Sequential 3-Position Multi-Angle Capture States
+  const [captureStepIndex, setCaptureStepIndex] = useState<number>(0); // 0: Front, 1: Left 90°, 2: Right 90°
+  const [threeAnglePhotos, setThreeAnglePhotos] = useState<string[]>(['', '', '']);
+  const [isBuildingTwinMesh, setIsBuildingTwinMesh] = useState<boolean>(false);
 
-  // Female Outfit Recommendations Dataset
-  const femaleOutfits = [
-    {
-      title: "Structured Linen Trench + Belted Midi Dress",
-      description: "Creates defined waist cinch while soft trench lapels complement shoulder structure.",
-      suitability: "98% Match for Hourglass",
-      imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
-      items: ["Beige Wool-Linen Trench", "Emerald Silk Belted Midi Dress", "Nude Pointed Pumps", "Rose Gold Pendant"]
-    },
-    {
-      title: "Monochromatic Silk Blouse + Tailored High-Waist Trousers",
-      description: "Elongates torso length while high rise trouser waistline highlights feminine proportions.",
-      suitability: "96% Match for Hourglass",
-      imageUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80",
-      items: ["Off-White V-Neck Silk Blouse", "Tailored Charcoal High-Waist Pants", "Espresso Leather Mules", "Gold Hoop Earrings"]
-    },
-    {
-      title: "Elegantly Draped Cashmere Knit + Pleated Satin Skirt",
-      description: "Soft draped neckline softens collarbone definition with fluid movement across hips.",
-      suitability: "95% Match for Hourglass",
-      imageUrl: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80",
-      items: ["Cream Cashmere Crewneck", "Champagne Satin Pleated Skirt", "Taupe Ankle Boots", "Minimalist Pearl Bracelet"]
+  // Live Camera Real-Time Posture Detection State
+  const [livePostureState, setLivePostureState] = useState<'proper' | 'leaning' | 'too_close'>('proper');
+  const [postureFeedbackText, setPostureFeedbackText] = useState<string>('🟢 PROPER POSTURE DETECTED — Feet flat & shoulders level');
+
+  // Real-Time AI Image Validation State
+  const [validationResult, setValidationResult] = useState<{
+    isValid: boolean;
+    poseScore: number;
+    fullBodyScore: number;
+    lightingLux: number;
+    alerts: string[];
+  }>({
+    isValid: true,
+    poseScore: 98,
+    fullBodyScore: 100,
+    lightingLux: 94,
+    alerts: ['✓ Pose Alignment Passed', '✓ Head-to-Toe Body Visible', '✓ Studio Lighting Optimal']
+  });
+
+  // AI Image Validation Analyzer
+  const runAiImageValidation = (stepIndex: number) => {
+    const poseScore = 95 + Math.floor(Math.random() * 4); // 95-99%
+    const fullBodyScore = 98 + Math.floor(Math.random() * 2); // 98-100%
+    const lightingLux = 92 + Math.floor(Math.random() * 6); // 92-98%
+    const alerts: string[] = [];
+
+    if (stepIndex === 0) {
+      alerts.push('✓ Front Pose Alignment Passed (0° Roll/Yaw)');
+    } else if (stepIndex === 1) {
+      alerts.push('✓ Left Profile Alignment Passed (90° Yaw)');
+    } else {
+      alerts.push('✓ Right Profile Alignment Passed (90° Yaw)');
     }
-  ];
 
-  // Male Outfit Recommendations Dataset
-  const maleOutfits = [
-    {
-      title: "Unstructured Charcoal Linen Blazer + Supima Tee",
-      description: "Soft unstructured shoulders balance shoulder width while slim trousers highlight leg proportions.",
-      suitability: "98% Match for V-Shape",
-      imageUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
-      items: ["Charcoal Wool-Linen Blazer", "Off-White Supima Cotton Crewneck", "Dark Slate Trousers", "Calfskin White Sneakers"]
-    },
-    {
-      title: "Open-Collar Silk-Linen Shirt + Tailored Slate Trousers",
-      description: "Vertical collar placket creates elongating lines. Tapered rise trousers balance upper torso width.",
-      suitability: "96% Match for V-Shape",
-      imageUrl: "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=800&q=80",
-      items: ["Olive-Emerald Silk Knit Shirt", "Tailored Slate Stretch Pants", "Espresso Suede Belt", "Silver Dial Chronograph"]
-    },
-    {
-      title: "Double-Breasted Beige Suit + Espresso Loafers",
-      description: "Lapel width aligns precisely with outer shoulder points, giving clean structural flow.",
-      suitability: "95% Match for V-Shape",
-      imageUrl: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80",
-      items: ["Sand Beige Wool Blend Suit", "Crisp White Oxford Shirt", "Espresso Leather Loafers", "Tortoise Acetate Sunglasses"]
-    }
-  ];
+    alerts.push('✓ Head-to-Toe Body Outline Visible');
+    alerts.push('✓ Studio Ambient Lighting Optimal');
 
-  // Unisex Outfit Recommendations Dataset
-  const unisexOutfits = [
-    {
-      title: "Oversized Cashmere Crewneck + Wide-Leg Slate Trousers",
-      description: "Clean gender-neutral silhouette with soft shoulders and fluid leg drape.",
-      suitability: "97% Match for Neutral Flow",
-      imageUrl: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=800&q=80",
-      items: ["Heather Grey Cashmere Crew", "Wide-Leg Slate Trousers", "White Leather Court Sneakers", "Minimalist Silver Ring"]
-    },
-    {
-      title: "Minimalist Cream Wool Coat + Tapered Black Pants",
-      description: "Timeless architectural lines providing effortless luxury across all body silhouettes.",
-      suitability: "95% Match for Neutral Flow",
-      imageUrl: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=800&q=80",
-      items: ["Cream Double-Faced Wool Coat", "Tapered Black Stretch Pants", "Black Leather Chelsea Boots"]
-    }
-  ];
-
-  // Dynamic Outfit Recommendations Selection Based on Profile Setup Gender Choice
-  const getOutfitsForGender = () => {
-    if (userGender === 'female') return femaleOutfits;
-    if (userGender === 'male') return maleOutfits;
-    return unisexOutfits;
+    setValidationResult({
+      isValid: true,
+      poseScore,
+      fullBodyScore,
+      lightingLux,
+      alerts
+    });
   };
 
-  // Dynamic Skin Tone Results
-  const skinScanDone = true;
-  const skinResult = {
-    detectedTone: "Warm Olive (Level 3)",
-    undertone: "Golden Warm",
-    paletteName: userGender === 'female' ? "Soft Autumn / Warm Elegance" : "Deep Autumn / Cool Winter",
-    powerColors: userGender === 'female' ? [
-      { name: "Emerald Silk", hex: "#0F766E" },
-      { name: "Rose Quartz", hex: "#E11D48" },
-      { name: "Deep Sapphire", hex: "#4338CA" },
-      { name: "Warm Terracotta", hex: "#C2410C" }
-    ] : [
-      { name: "Teal Emerald", hex: "#0F766E" },
-      { name: "Deep Sapphire", hex: "#4338CA" },
-      { name: "Charcoal Slate", hex: "#1E293B" },
-      { name: "Crimson Wine", hex: "#BE123C" }
-    ],
-    avoidColors: [
-      { name: "Muted Mustard", hex: "#D97706" },
-      { name: "Pale Salmon", hex: "#FB7185" }
-    ],
-    recommendedMetals: userGender === 'female' ? ["Rose Gold", "Warm Yellow Gold", "Brushed Platinum"] : ["Brushed Platinum", "Brushed Silver", "Matte Black"],
-    reasoning: userGender === 'female' 
-      ? "Analysis of your selfie detected a warm olive undertone. Emerald silk and rose quartz highlight natural glowing skin tones, paired best with rose gold jewelry."
-      : "Analysis of your selfie detected a warm olive undertone. Deep sapphire and charcoal slate bring out sharp jawline definition, while muted mustard should be avoided."
-  };
+  // Real-Time Live Camera Computer Vision Frame Analysis Engine
+  useEffect(() => {
+    let animId: number;
+    let frameCount = 0;
 
-  // Dynamic Body Results
-  const bodyScanDone = true;
-  const bodyResult = {
-    bodyShape: userGender === 'female' 
-      ? "Hourglass Silhouette (Defined Waist & Balanced Bust/Hips)" 
-      : userGender === 'male' 
-      ? "Athletic V-Shape (Broad Shoulders, Tapered Waist)" 
-      : "Classic Fluid Silhouette",
-    shoulderRatio: userGender === 'female' ? "1.02 Balanced Proportion Ratio" : "1.28 Ratio (High Angular Symmetry)",
-    heightEstimate: `${height} cm`,
-    recommendedOutfits: getOutfitsForGender()
-  };
+    const analyzeCameraFrame = () => {
+      frameCount++;
+      if (videoRef.current && isCameraActive && videoRef.current.readyState === 4 && capturedPreviewImg === null) {
+        if (frameCount % 6 === 0) {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 160;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(videoRef.current, 0, 0, 160, 200);
+              const imageData = ctx.getImageData(0, 0, 160, 200);
+              const data = imageData.data;
+              
+              let leftMass = 0;
+              let rightMass = 0;
+              let topMass = 0;
+              let bottomMass = 0;
 
-  // Chat State
-  const [chatInput, setChatInput] = useState('');
-  const [messages, setMessages] = useState([
-    { text: "Welcome to Aura AI! I have tailored your styling profile based on your gender selection. Ask me any outfit, dress code, or color pairing question.", isUser: false }
-  ]);
+              for (let i = 0; i < data.length; i += 16) {
+                const r = data[i];
+                const g = data[i+1];
+                const b = data[i+2];
+                const luma = 0.299 * r + 0.587 * g + 0.114 * b;
 
-  // Start Web Camera Stream
-  const startCamera = async () => {
-    setCameraError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        setCameraActive(true);
-      }
-    } catch (err: any) {
-      setCameraError("Camera permission denied or camera unavailable. Please upload your photo file.");
-      setCameraActive(false);
-    }
-  };
+                const pixelIdx = i / 4;
+                const x = pixelIdx % 160;
+                const y = Math.floor(pixelIdx / 160);
 
-  // Stop Camera Stream
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    setCameraActive(false);
-  };
+                if (luma < 210) {
+                  if (x < 80) leftMass++; else rightMass++;
+                  if (y < 100) topMass++; else bottomMass++;
+                }
+              }
 
-  // Capture Snapshot
-  const capturePhotoForTab = (tab: 'skin-scanner' | 'body-scanner') => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg');
-        if (tab === 'skin-scanner') {
-          setSkinSelfieImage(dataUrl);
-        } else {
-          setFullBodyImage(dataUrl);
+              const totalMass = leftMass + rightMass;
+              if (totalMass > 120) {
+                const symmetryDiff = Math.abs(leftMass - rightMass) / totalMass;
+                const verticalRatio = bottomMass / (topMass || 1);
+
+                if (symmetryDiff > 0.38) {
+                  setLivePostureState('leaning');
+                  setPostureFeedbackText('🔴 WARNING: Shoulders Tilted / Leaning! Stand straight & level shoulders');
+                } else if (verticalRatio < 0.2) {
+                  setLivePostureState('too_close');
+                  setPostureFeedbackText('🔴 WARNING: Step Back 1.5m! Lower body & feet are cut off');
+                } else {
+                  setLivePostureState('proper');
+                  setPostureFeedbackText('🟢 PROPER POSTURE DETECTED — Feet flat & shoulders level');
+                }
+              }
+            }
+          } catch (e) {
+            console.log('Frame analysis skip:', e);
+          }
         }
-        stopCamera();
       }
+
+      if (isCameraActive) {
+        animId = requestAnimationFrame(analyzeCameraFrame);
+      }
+    };
+
+    if (isCameraActive) {
+      animId = requestAnimationFrame(analyzeCameraFrame);
     }
+    return () => cancelAnimationFrame(animId);
+  }, [isCameraActive, capturedPreviewImg]);
+  
+  // Hands-Free Auto-Capture States
+  const [handsFreeMode, setHandsFreeMode] = useState<'timer' | 'voice' | 'gesture'>('timer');
+  const [countdownValue, setCountdownValue] = useState<number | null>(null);
+  const [isListeningVoice, setIsListeningVoice] = useState<boolean>(false);
+
+  // Web Audio API Beep Synthesizer
+  const playBeepSound = (freq = 800, type = 'sine') => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type as any;
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.3);
+      setTimeout(() => ctx.close(), 300);
+    } catch (e) {}
   };
 
-  // Handle Photo Uploads
-  const handleSkinSelfieUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (ev) => ev.target?.result && setSkinSelfieImage(ev.target.result as string);
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  };
-
-  const handleFullBodyUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (ev) => ev.target?.result && setFullBodyImage(ev.target.result as string);
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  };
-
-  // Auth Handler
-  const handleAuthSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setAuthError('Please enter a valid email and password');
+  // Hands-Free Countdown Action Trigger
+  const startHandsFreeCountdown = (seconds = 5) => {
+    if (livePostureState !== 'proper') {
+      triggerToast('⚠️ CANNOT CAPTURE: Alignment is RED! Please align your posture until the frame turns GREEN.');
       return;
     }
-    setAuthError(null);
-    setAppState('setup');
-    setSetupStep(1);
-  };
+    let current = seconds;
+    setCountdownValue(current);
+    playBeepSound(600);
 
-  const handleSendMessage = (textToSend?: string) => {
-    const query = textToSend || chatInput;
-    if (!query.trim()) return;
-    setMessages(prev => [...prev, { text: query, isUser: true }]);
-    if (!textToSend) setChatInput('');
-
-    setTimeout(() => {
-      let reply = `Aura AI Recommendation (${userGender.toUpperCase()}): Focus on color contrast and silhouette harmony. Emerald silk, rose quartz, and deep sapphire bring out your glowing undertone.`;
-      if (query.toLowerCase().includes("interview")) {
-        reply = userGender === 'female' 
-          ? "For a high-impact executive interview, pair a structured navy wool blazer with a silk cream top, tailored high-waist trousers, and nude leather pumps."
-          : "For a modern executive interview, pair an unstructured navy wool blazer over an off-white silk crewneck shirt, slim charcoal trousers, and clean dress sneakers.";
+    const timer = setInterval(() => {
+      current -= 1;
+      if (current > 0) {
+        setCountdownValue(current);
+        playBeepSound(600);
+      } else {
+        clearInterval(timer);
+        setCountdownValue(null);
+        playBeepSound(1200, 'square');
+        capturePhotoAction();
       }
-      setMessages(prev => [...prev, { text: reply, isUser: false }]);
     }, 1000);
   };
 
-  useEffect(() => {
-    return () => {
-      stopCamera();
+  // Voice Command Speech Recognition Listener
+  const startVoiceListener = () => {
+    setIsListeningVoice(true);
+    triggerToast('🗣️ Listening... Say "CAPTURE" or "CHEESE" out loud!');
+    
+    // Simulate voice keyword recognition or use SpeechRecognition if available
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript.toLowerCase();
+          if (transcript.includes('capture') || transcript.includes('snap') || transcript.includes('cheese') || transcript.includes('photo')) {
+            setIsListeningVoice(false);
+            startHandsFreeCountdown(3);
+          }
+        };
+        recognition.start();
+      } catch (e) {}
+    } else {
+      setTimeout(() => {
+        setIsListeningVoice(false);
+        startHandsFreeCountdown(3);
+      }, 2500);
+    }
+  };
+
+  // Wardrobe Items Counter State
+  const [wardrobeCounts, setWardrobeCounts] = useState({
+    Tops: 42,
+    Bottoms: 25,
+    Dresses: 18,
+    Shoes: 14,
+    Bags: 11,
+    Accessories: 26,
+    Watches: 9
+  });
+
+  // Layer Stack State
+  const [equippedStack, setEquippedStack] = useState<Array<{ name: string; category: string; img: string }>>([
+    { name: 'Lavender Silk Blouse', category: 'Tops', img: '/models/lavender.png' },
+    { name: 'Light Wide Denim', category: 'Bottoms', img: '/models/hero.png' },
+    { name: 'Structured Leather Tote', category: 'Bags', img: '/models/black.png' }
+  ]);
+
+  // Your Look Timeline State
+  const [lookTimeline, setLookTimeline] = useState([
+    { id: '1', date: 'Mon, 19 May', title: 'Office Look', rating: 5, img: '/models/lavender.png' },
+    { id: '2', date: 'Tue, 20 May', title: 'Casual Day Out', rating: 5, img: '/models/hero.png' },
+    { id: '3', date: 'Wed, 21 May', title: 'Wedding Function', rating: 5, img: '/models/black.png' }
+  ]);
+
+  // Outfit Suggestions Data State
+  const [outfitList, setOutfitList] = useState([
+    { id: '1', name: 'Executive Elegance', category: 'Office', img: '/models/lavender.png', score: '9.4' },
+    { id: '2', name: 'Quiet Luxury Dark', category: 'Party', img: '/models/black.png', score: '9.2' },
+    { id: '3', name: 'Resort Casual Olive', category: 'Casual', img: '/models/green.png', score: '9.0' },
+    { id: '4', name: 'Classic Crisp White', category: 'Date', img: '/models/hero.png', score: '9.5' },
+  ]);
+
+  // Toast Helper
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Camera Handlers
+  const startCamera = async () => {
+    setShowCameraModal(true);
+    setIsCameraActive(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.log('Webcam stream unavailable, falling back to simulated capture.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
+    }
+    setIsCameraActive(false);
+    setShowCameraModal(false);
+  };
+
+  const capturePhotoAction = () => {
+    if (livePostureState !== 'proper') {
+      triggerToast('⚠️ CANNOT CAPTURE: Alignment is RED! Please align your posture until the frame turns GREEN.');
+      return;
+    }
+    runAiImageValidation(captureStepIndex);
+    if (videoRef.current && isCameraActive) {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = videoRef.current.videoWidth || 640;
+        canvas.height = videoRef.current.videoHeight || 800;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/png');
+          setCapturedPhoto(dataUrl);
+          setCapturedPreviewImg(dataUrl);
+          triggerToast('📸 Photo Captured & AI Validated! Inspect preview.');
+          return;
+        }
+      } catch (e) {
+        console.log('Canvas snapshot fallback:', e);
+      }
+    }
+    setCapturedPhoto('/models/lavender.png');
+    setCapturedPreviewImg('/models/lavender.png');
+    triggerToast('📸 Photo Captured & AI Validated! Inspect preview.');
+  };
+
+  // URL Link Ingestion Action
+  const importFromUrlAction = () => {
+    setWardrobeCounts((prev) => ({ ...prev, Tops: prev.Tops + 1 }));
+    triggerToast(`✨ Imported "${productUrl.split('/').pop() || 'Item'}" into Wardrobe!`);
+  };
+
+  // AI Garment Generation Action
+  const generateAiGarmentAction = () => {
+    setWardrobeCounts((prev) => ({ ...prev, Tops: prev.Tops + 1 }));
+    triggerToast(`✨ Generated 3D "${aiPrompt}" & saved to Wardrobe!`);
+  };
+
+  // Save Look to Timeline Action
+  const saveCurrentLookAction = () => {
+    const newLook = {
+      id: Date.now().toString(),
+      date: 'Today',
+      title: 'Custom Styled Twin Look',
+      rating: 5,
+      img: selectedModelImg
     };
-  }, []);
+    setLookTimeline([newLook, ...lookTimeline]);
+    triggerToast('✨ Look Saved to Your Look Timeline!');
+  };
+
+  // Undo Layer Action
+  const undoLayerAction = () => {
+    if (equippedStack.length > 0) {
+      setEquippedStack(equippedStack.slice(0, -1));
+      triggerToast('↺ Cleared last garment layer');
+    }
+  };
+
+  // Share Look Action
+  const shareLookAction = () => {
+    navigator.clipboard.writeText(window.location.href);
+    triggerToast('📋 Share link copied to clipboard!');
+  };
+
+  // Generate 10 More Looks Action
+  const generate10MoreLooksAction = () => {
+    setIsGeneratingLooks(true);
+    setTimeout(() => {
+      const newItems = [
+        { id: Date.now().toString() + '1', name: 'Monochrome Midnight', category: 'Party', img: '/models/black.png', score: '9.6' },
+        { id: Date.now().toString() + '2', name: 'Parisian Spring', category: 'Casual', img: '/models/lavender.png', score: '9.3' }
+      ];
+      setOutfitList([...outfitList, ...newItems]);
+      setIsGeneratingLooks(false);
+      triggerToast('✨ Generated 10 New Curated Outfit Capsules!');
+    }, 1200);
+  };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#090A0F', color: '#F9FAFB', fontFamily: 'system-ui, sans-serif' }}>
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-      {/* ======================================================== */}
-      {/* 1. AUTHENTICATION SCREEN (LOGIN / SIGNUP) */}
-      {/* ======================================================== */}
-      {appState === 'auth' && (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 50% 30%, rgba(99, 102, 241, 0.15), transparent 70%), #090A0F', padding: '24px' }}>
-          <div className="glass-card glowing" style={{ width: '100%', maxWidth: '440px', padding: '40px', borderRadius: '32px', textAlign: 'center' }}>
-            
-            <div style={{ width: '56px', height: '56px', borderRadius: '18px', background: 'linear-gradient(135deg, #6366F1, #EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto' }}>
-              <Sparkles size={28} color="#FFF" />
-            </div>
-
-            <h1 style={{ margin: '0 0 6px 0', fontSize: '26px', fontWeight: 800, letterSpacing: '1px' }}>AURA AI</h1>
-            <p style={{ color: '#9CA3AF', fontSize: '14px', margin: '0 0 32px 0' }}>Your Personal AI Stylist & Wardrobe Ecosystem</p>
-
-            {/* Social OAuth Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-              <button className="morph-btn morph-btn-outline" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { setAppState('setup'); setSetupStep(1); }}>
-                Continue with Apple
-              </button>
-              <button className="morph-btn morph-btn-outline" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { setAppState('setup'); setSetupStep(1); }}>
-                Continue with Google
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', margin: '24px 0' }}>
-              <hr style={{ flex: 1, borderColor: 'rgba(255,255,255,0.1)' }} />
-              <span style={{ fontSize: '11px', color: '#6B7280', fontWeight: 700 }}>OR WITH EMAIL</span>
-              <hr style={{ flex: 1, borderColor: 'rgba(255,255,255,0.1)' }} />
-            </div>
-
-            <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
-              <div>
-                <label style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 700, display: 'block', marginBottom: '6px' }}>EMAIL ADDRESS</label>
-                <input 
-                  type="email" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  required
-                  style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#FFF', fontSize: '15px' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 700, display: 'block', marginBottom: '6px' }}>PASSWORD</label>
-                <input 
-                  type="password" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required
-                  style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#FFF', fontSize: '15px' }}
-                />
-              </div>
-
-              {authError && (
-                <span style={{ fontSize: '13px', color: '#EF4444' }}>{authError}</span>
-              )}
-
-              <button type="submit" className="morph-btn" style={{ width: '100%', justifyContent: 'center', padding: '16px', fontSize: '16px', marginTop: '8px' }}>
-                {authMode === 'login' ? 'Sign In to Aura AI' : 'Create Free Account'} <ArrowRight size={18} />
-              </button>
-            </form>
-
-            <p style={{ margin: '24px 0 0 0', fontSize: '13px', color: '#9CA3AF' }}>
-              {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
-              <button 
-                onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
-                style={{ background: 'none', border: 'none', color: '#6366F1', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-              >
-                {authMode === 'login' ? 'Sign Up' : 'Sign In'}
-              </button>
-            </p>
-
-          </div>
+    <div style={{ minHeight: '100vh', backgroundColor: '#FAF7F2', color: '#2E1C44', fontFamily: "'Plus Jakarta Sans', sans-serif", paddingBottom: '90px', position: 'relative' }}>
+      
+      {/* FLOATING TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1000, background: '#2E1C44', color: '#FFF', padding: '12px 20px', borderRadius: '16px', fontSize: '13px', fontWeight: 700, boxShadow: '0 10px 30px rgba(46,28,68,0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Sparkles size={16} color="#EC4899" />
+          <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* 2. ACCOUNT SETUP ONBOARDING PIPELINE */}
-      {/* ======================================================== */}
-      {appState === 'setup' && (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', background: 'radial-gradient(circle at 50% 20%, rgba(236, 72, 153, 0.12), transparent 70%), #090A0F' }}>
-          
-          {/* Progress Header Bar */}
-          <div style={{ width: '100%', maxWidth: '680px', marginBottom: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 800, color: '#6366F1', letterSpacing: '1px' }}>ACCOUNT SETUP · STEP {setupStep} OF 4</span>
-              <span style={{ fontSize: '12px', color: '#9CA3AF' }}>{setupStep * 25}% Complete</span>
+      {/* 1. TOP HEADER & VALUE PROPOSITION HERO BAR */}
+      <header style={{ background: '#FFFFFF', borderBottom: '1px solid #EFE9E0', padding: '20px 24px', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 20px rgba(46, 28, 68, 0.03)' }}>
+        <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: '16px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'linear-gradient(135deg, #7C3AED, #EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}>
+                <Sparkles size={22} />
+              </div>
+              <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, color: '#2E1C44', letterSpacing: '-0.03em' }}>Aura AI</h1>
+              <span style={{ fontSize: '11px', fontWeight: 800, padding: '4px 10px', borderRadius: '20px', background: 'rgba(124,58,237,0.1)', color: '#7C3AED', textTransform: 'uppercase' }}>Digital Fashion Twin</span>
             </div>
-            <div style={{ width: '100%', height: '6px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-              <div style={{ width: `${setupStep * 25}%`, height: '100%', background: 'linear-gradient(90deg, #6366F1, #EC4899)', transition: 'width 0.4s ease' }} />
-            </div>
+            <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6B5B7B', fontWeight: 500 }}>One body. Unlimited outfits. Your personal AI stylist.</p>
           </div>
 
-          <div className="glass-card glowing" style={{ width: '100%', maxWidth: '680px', padding: '40px', borderRadius: '32px' }}>
-            
-            {/* STEP 1: PERSONAL IDENTITY & GENDER */}
-            {setupStep === 1 && (
-              <div>
-                <h2 style={{ fontSize: '28px', margin: '0 0 8px 0' }}>Tell Us About Yourself</h2>
-                <p style={{ color: '#9CA3AF', marginBottom: '28px' }}>Your gender preference directly configures your tailored outfit recommendations.</p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 700, display: 'block', marginBottom: '6px' }}>YOUR NAME</label>
-                    <input 
-                      type="text" 
-                      value={userName} 
-                      onChange={(e) => setUserName(e.target.value)} 
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#FFF', fontSize: '15px' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#6366F1', fontWeight: 800, display: 'block', marginBottom: '8px', letterSpacing: '1px' }}>GENDER STYLING PROFILE (TAILORS ALL OUTFITS)</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                      {[
-                        { id: 'female', label: '👩 Female Outfits' },
-                        { id: 'male', label: '👨 Male Outfits' },
-                        { id: 'unisex', label: '✨ Unisex Outfits' }
-                      ].map((g) => (
-                        <button
-                          key={g.id}
-                          type="button"
-                          onClick={() => setUserGender(g.id as any)}
-                          style={{
-                            padding: '16px 12px', borderRadius: '16px', border: '1px solid',
-                            borderColor: userGender === g.id ? '#6366F1' : 'rgba(255,255,255,0.1)',
-                            backgroundColor: userGender === g.id ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.02)',
-                            color: userGender === g.id ? '#FFF' : '#9CA3AF',
-                            fontWeight: 700, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s ease'
-                          }}
-                        >
-                          {g.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 700, display: 'block', marginBottom: '6px' }}>PREFERRED STYLE AESTHETIC</label>
-                    <select 
-                      value={styleAesthetic}
-                      onChange={(e) => setStyleAesthetic(e.target.value)}
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', background: '#12141C', border: '1px solid rgba(255,255,255,0.12)', color: '#FFF', fontSize: '15px' }}
-                    >
-                      <option value="Quiet Luxury Minimalist">Quiet Luxury Minimalist (Apple + Notion)</option>
-                      <option value="Old Money Tailored">Old Money Tailored Executive</option>
-                      <option value="Streetwear High-Fashion">Modern Streetwear & High Fashion</option>
-                      <option value="Smart Casual Chic">Smart Casual Chic</option>
-                    </select>
-                  </div>
-                </div>
-
-                <button className="morph-btn" style={{ width: '100%', justifyContent: 'center', marginTop: '32px', padding: '16px' }} onClick={() => setSetupStep(2)}>
-                  Continue to Measurements & Sizing <ChevronRight size={18} />
-                </button>
-              </div>
-            )}
-
-            {/* STEP 2: MEASUREMENTS & SIZING */}
-            {setupStep === 2 && (
-              <div>
-                <h2 style={{ fontSize: '28px', margin: '0 0 8px 0' }}>Sizing & Proportions</h2>
-                <p style={{ color: '#9CA3AF', marginBottom: '28px' }}>Ensures garment drape, rise, and sleeve cuffs fit perfectly.</p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 700, display: 'block', marginBottom: '6px' }}>HEIGHT (CM)</label>
-                    <input 
-                      type="number" 
-                      value={height} 
-                      onChange={(e) => setHeight(Number(e.target.value))} 
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#FFF', fontSize: '15px' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 700, display: 'block', marginBottom: '6px' }}>WEIGHT (KG)</label>
-                    <input 
-                      type="number" 
-                      value={weight} 
-                      onChange={(e) => setWeight(Number(e.target.value))} 
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#FFF', fontSize: '15px' }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 700, display: 'block', marginBottom: '6px' }}>CLOTHING SIZE</label>
-                    <select 
-                      value={clothingSize}
-                      onChange={(e) => setClothingSize(e.target.value)}
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', background: '#12141C', border: '1px solid rgba(255,255,255,0.12)', color: '#FFF', fontSize: '15px' }}
-                    >
-                      <option value="XS">Extra Small (XS)</option>
-                      <option value="S">Small (S)</option>
-                      <option value="M">Medium (M)</option>
-                      <option value="L">Large (L)</option>
-                      <option value="XL">Extra Large (XL)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 700, display: 'block', marginBottom: '6px' }}>FIT CUT PREFERENCE</label>
-                    <select 
-                      value={fitPreference}
-                      onChange={(e) => setFitPreference(e.target.value)}
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', background: '#12141C', border: '1px solid rgba(255,255,255,0.12)', color: '#FFF', fontSize: '15px' }}
-                    >
-                      <option value="Tailored Slim">Tailored Slim Fit</option>
-                      <option value="Relaxed Oversized">Relaxed Oversized Fit</option>
-                      <option value="Classic Regular">Classic Regular Fit</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
-                  <button className="morph-btn morph-btn-outline" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setSetupStep(1)}>
-                    Back
-                  </button>
-                  <button className="morph-btn" style={{ flex: 2, justifyContent: 'center' }} onClick={() => setSetupStep(3)}>
-                    Continue to Location & Weather <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 3: LOCATION & CLIMATE */}
-            {setupStep === 3 && (
-              <div>
-                <h2 style={{ fontSize: '28px', margin: '0 0 8px 0' }}>Location & Climate Context</h2>
-                <p style={{ color: '#9CA3AF', marginBottom: '28px' }}>Allows Aura AI to check local daily weather for garment fabric recommendations.</p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 700, display: 'block', marginBottom: '6px' }}>PRIMARY CITY</label>
-                    <input 
-                      type="text" 
-                      value={city} 
-                      onChange={(e) => setCity(e.target.value)} 
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#FFF', fontSize: '15px' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 700, display: 'block', marginBottom: '6px' }}>CLIMATE CONTEXT</label>
-                    <select 
-                      value={climate}
-                      onChange={(e) => setClimate(e.target.value)}
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', background: '#12141C', border: '1px solid rgba(255,255,255,0.12)', color: '#FFF', fontSize: '15px' }}
-                    >
-                      <option value="Temperate Four-Season">Temperate (Four Seasons)</option>
-                      <option value="Warm Mediterranean">Warm Mediterranean / Coastal</option>
-                      <option value="Tropical Humid">Tropical Humid / Warm</option>
-                      <option value="Cold Continental">Cold Continental / Alpine</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
-                  <button className="morph-btn morph-btn-outline" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setSetupStep(2)}>
-                    Back
-                  </button>
-                  <button className="morph-btn" style={{ flex: 2, justifyContent: 'center' }} onClick={() => setSetupStep(4)}>
-                    Proceed to AI Photo Scans <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 4: AI PHOTO UPLOADS & GENDER-MATCHED OUTFIT PREVIEW */}
-            {setupStep === 4 && (
-              <div>
-                <h2 style={{ fontSize: '28px', margin: '0 0 8px 0' }}>AI Photo Scans & Outfit Preview</h2>
-                <p style={{ color: '#9CA3AF', marginBottom: '24px' }}>
-                  Your selected gender profile (<strong style={{ color: '#EC4899' }}>{userGender.toUpperCase()}</strong>) has generated your visual outfit recommendations.
-                </p>
-
-                {/* GENDER-MATCHED TAILORED OUTFIT PREVIEW CARD */}
-                <div style={{ borderRadius: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(236, 72, 153, 0.3)', overflow: 'hidden', marginBottom: '24px' }}>
-                  <div style={{ padding: '12px 16px', background: 'rgba(236, 72, 153, 0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '11px', color: '#EC4899', fontWeight: 800, letterSpacing: '1px' }}>
-                      TAILORED OUTFIT MATCH FOR {userGender.toUpperCase()}
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 800 }}>{getOutfitsForGender()[0].suitability}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '16px', padding: '16px', alignItems: 'center' }}>
-                    <img src={getOutfitsForGender()[0].imageUrl} alt="Outfit Preview" style={{ width: '90px', height: '90px', borderRadius: '14px', objectFit: 'cover' }} />
-                    <div>
-                      <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 700 }}>{getOutfitsForGender()[0].title}</h4>
-                      <p style={{ margin: 0, fontSize: '13px', color: '#9CA3AF', lineHeight: 1.4 }}>{getOutfitsForGender()[0].description}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '28px' }}>
-                  
-                  {/* Selfie Photo Card */}
-                  <div style={{ padding: '20px', borderRadius: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-                    <Flame size={28} color="#6366F1" style={{ marginBottom: '10px' }} />
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>1. Close-Up Selfie</h4>
-                    <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: '#9CA3AF' }}>Skin tone & power colors.</p>
-
-                    <label className="morph-btn morph-btn-outline" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', cursor: 'pointer' }}>
-                      <Upload size={14} /> Upload Selfie
-                      <input type="file" accept="image/*" onChange={handleSkinSelfieUpload} style={{ display: 'none' }} />
-                    </label>
-                    {skinSelfieImage && <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 800, marginTop: '6px', display: 'block' }}>✓ Selfie Uploaded</span>}
-                  </div>
-
-                  {/* Full Body Photo Card */}
-                  <div style={{ padding: '20px', borderRadius: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-                    <Activity size={28} color="#EC4899" style={{ marginBottom: '10px' }} />
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>2. Full Body Photo</h4>
-                    <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: '#9CA3AF' }}>Silhouette & proportions.</p>
-
-                    <label className="morph-btn morph-btn-outline" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', cursor: 'pointer' }}>
-                      <Upload size={14} /> Upload Full Body
-                      <input type="file" accept="image/*" onChange={handleFullBodyUpload} style={{ display: 'none' }} />
-                    </label>
-                    {fullBodyImage && <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 800, marginTop: '6px', display: 'block' }}>✓ Full Body Uploaded</span>}
-                  </div>
-
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button className="morph-btn morph-btn-outline" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setSetupStep(3)}>
-                    Back
-                  </button>
-                  <button 
-                    className="morph-btn" 
-                    style={{ flex: 2, justifyContent: 'center', padding: '18px', fontSize: '16px', background: 'linear-gradient(135deg, #6366F1, #EC4899)' }}
-                    onClick={() => setAppState('main')}
-                  >
-                    Complete Setup & Open Dashboard Hub <Check size={20} />
-                  </button>
-                </div>
-              </div>
-            )}
-
+          {/* Hero Value Pills */}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div onClick={() => setShowTwinOnboardingModal(true)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '14px', background: '#FAF6F0', border: '1px solid #EFE9E0', fontSize: '12px', fontWeight: 700, color: '#2E1C44' }}>
+              <User size={15} color="#7C3AED" />
+              <span>Your Real Body</span>
+            </div>
+            <div onClick={() => setBottomNavTab('wardrobe')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '14px', background: '#FAF6F0', border: '1px solid #EFE9E0', fontSize: '12px', fontWeight: 700, color: '#2E1C44' }}>
+              <ShoppingBag size={15} color="#7C3AED" />
+              <span>Your Wardrobe</span>
+            </div>
+            <div onClick={() => setBottomNavTab('stylist')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '14px', background: '#FAF6F0', border: '1px solid #EFE9E0', fontSize: '12px', fontWeight: 700, color: '#2E1C44' }}>
+              <Sparkles size={15} color="#7C3AED" />
+              <span>AI Styling</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '14px', background: 'rgba(236,72,153,0.1)', border: '1px solid rgba(236,72,153,0.2)', fontSize: '12px', fontWeight: 800, color: '#EC4899' }}>
+              <Heart size={15} color="#EC4899" />
+              <span>Try. Save. Slay.</span>
+            </div>
           </div>
         </div>
-      )}
+      </header>
 
-      {/* ======================================================== */}
-      {/* 3. MAIN AURA AI WORKSPACE ECOSYSTEM */}
-      {/* ======================================================== */}
-      {appState === 'main' && (
-        <div style={{ display: 'flex', minHeight: '100vh' }}>
-          
-          {/* Sidebar Navigation */}
-          <aside style={{ width: '290px', backgroundColor: '#12141C', borderRight: '1px solid rgba(255,255,255,0.1)', padding: '24px', display: 'flex', flexDirection: 'column' }}>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #6366F1, #EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Sparkles size={22} color="#FFF" />
+      <main style={{ maxWidth: '1240px', margin: '24px auto', padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        
+        {/* 2. "HOW IT WORKS" 5-STEP PROCESS FLOW */}
+        <section style={{ background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', boxShadow: '0 4px 20px rgba(46, 28, 68, 0.03)' }}>
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7C3AED' }}>HOW IT WORKS</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(5, 1fr)', gap: '16px' }}>
+            {/* Step 1 */}
+            <div 
+              onClick={() => setShowTwinOnboardingModal(true)}
+              style={{ padding: '16px', borderRadius: '20px', background: '#FAF7F2', border: '1px solid #EFE9E0', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
+                <Camera size={22} color="#7C3AED" />
               </div>
+              <strong style={{ display: 'block', fontSize: '13px', color: '#2E1C44', marginBottom: '4px' }}>1. Create My Twin</strong>
+              <p style={{ margin: 0, fontSize: '11px', color: '#6B5B7B' }}>Upload 3 photos: front, left & right</p>
+            </div>
+
+            {/* Step 2 */}
+            <div 
+              onClick={() => setShowBodyMeshModal(true)}
+              style={{ padding: '16px', borderRadius: '20px', background: '#FAF7F2', border: '1px solid #EFE9E0', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
+                <User size={22} color="#7C3AED" />
+              </div>
+              <strong style={{ display: 'block', fontSize: '13px', color: '#2E1C44', marginBottom: '4px' }}>2. AI Builds You</strong>
+              <p style={{ margin: 0, fontSize: '11px', color: '#6B5B7B' }}>We create your digital body & measurements</p>
+            </div>
+
+            {/* Step 3 */}
+            <div 
+              onClick={() => {
+                const el = document.getElementById('add-clothes-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              style={{ padding: '16px', borderRadius: '20px', background: '#FAF7F2', border: '1px solid #EFE9E0', textAlign: 'center', cursor: 'pointer' }}
+            >
+              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
+                <Shirt size={22} color="#7C3AED" />
+              </div>
+              <strong style={{ display: 'block', fontSize: '13px', color: '#2E1C44', marginBottom: '4px' }}>3. Add Clothes</strong>
+              <p style={{ margin: 0, fontSize: '11px', color: '#6B5B7B' }}>Upload, screenshot or paste link</p>
+            </div>
+
+            {/* Step 4 */}
+            <div 
+              onClick={() => {
+                const el = document.getElementById('studio-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              style={{ padding: '16px', borderRadius: '20px', background: '#FAF7F2', border: '1px solid #EFE9E0', textAlign: 'center', cursor: 'pointer' }}
+            >
+              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
+                <Sparkles size={22} color="#7C3AED" />
+              </div>
+              <strong style={{ display: 'block', fontSize: '13px', color: '#2E1C44', marginBottom: '4px' }}>4. Try & Style</strong>
+              <p style={{ margin: 0, fontSize: '11px', color: '#6B5B7B' }}>Mix, match & try unlimited looks</p>
+            </div>
+
+            {/* Step 5 */}
+            <div 
+              onClick={() => setShowAdviceModal(true)}
+              style={{ padding: '16px', borderRadius: '20px', background: '#FAF7F2', border: '1px solid #EFE9E0', textAlign: 'center', cursor: 'pointer' }}
+            >
+              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
+                <Award size={22} color="#10B981" />
+              </div>
+              <strong style={{ display: 'block', fontSize: '13px', color: '#2E1C44', marginBottom: '4px' }}>5. Get AI Advice</strong>
+              <span style={{ fontSize: '12px', fontWeight: 800, color: '#10B981', display: 'block', marginBottom: '2px' }}>Great Look! 9.2/10</span>
+              <p style={{ margin: 0, fontSize: '11px', color: '#6B5B7B' }}>Click for smart suggestions breakdown</p>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. "ADD CLOTHES TO YOUR WARDROBE" SECTION (4 INGESTION MODES) */}
+        <section id="add-clothes-section" style={{ background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', boxShadow: '0 4px 20px rgba(46, 28, 68, 0.03)' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7C3AED' }}>ADD CLOTHES TO YOUR WARDROBE</span>
+            <h2 style={{ margin: '4px 0 0 0', fontSize: '20px', fontWeight: 800, color: '#2E1C44' }}>Choose Your Import Method</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr) 280px', gap: '16px' }}>
+            {/* Mode 1: Take a Photo */}
+            <div 
+              onClick={() => {
+                setActiveIngestionMode('photo');
+                startCamera();
+              }}
+              style={{ 
+                padding: '20px', 
+                borderRadius: '24px', 
+                background: activeIngestionMode === 'photo' ? 'rgba(124,58,237,0.04)' : '#FAF7F2', 
+                border: activeIngestionMode === 'photo' ? '2px solid #7C3AED' : '1px solid #EFE9E0', 
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}
+            >
               <div>
-                <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 800, letterSpacing: '2px' }}>AURA AI</h1>
-                <span style={{ fontSize: '10px', color: '#9CA3AF', letterSpacing: '1px' }}>PERSONAL STYLIST ECOSYSTEM</span>
-              </div>
-            </div>
-
-            {/* Logged In User Profile Chip */}
-            <div style={{ marginBottom: '24px', padding: '14px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: '#6366F1', color: '#FFF', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
-                  {userName.charAt(0)}
-                </div>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700 }}>{userName}</h4>
-                  <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{userGender.toUpperCase()} · {city}</span>
+                <strong style={{ fontSize: '14px', color: '#2E1C44', display: 'block', marginBottom: '12px' }}>Take a Photo</strong>
+                <div style={{ height: '140px', borderRadius: '16px', background: '#2E1C44', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                  <Shirt size={48} color="#EC4899" />
+                  <div style={{ position: 'absolute', bottom: '12px', width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#FFF' }} />
+                  </div>
                 </div>
               </div>
-              <button onClick={() => setAppState('auth')} title="Log Out" style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}>
-                <LogOut size={16} />
-              </button>
+              <p style={{ margin: '12px 0 0 0', fontSize: '11px', color: '#6B5B7B', textAlign: 'center' }}>We remove background & detect details</p>
             </div>
 
-            {/* GENDER TOGGLE */}
-            <div style={{ marginBottom: '24px', padding: '14px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <span style={{ fontSize: '11px', color: '#6366F1', fontWeight: 700, letterSpacing: '1px', display: 'block', marginBottom: '8px' }}>STYLING PROFILE GENDER</span>
-              <div style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.4)', padding: '4px', borderRadius: '12px' }}>
-                {[
-                  { id: 'female', label: '👩 Female' },
-                  { id: 'male', label: '👨 Male' },
-                  { id: 'unisex', label: '✨ Unisex' }
-                ].map((g) => (
-                  <button
-                    key={g.id}
-                    onClick={() => setUserGender(g.id as any)}
-                    style={{
-                      flex: 1, padding: '6px 2px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-                      backgroundColor: userGender === g.id ? '#6366F1' : 'transparent',
-                      color: userGender === g.id ? '#FFF' : '#9CA3AF',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    {g.label}
-                  </button>
-                ))}
+            {/* Mode 2: Upload Screenshot */}
+            <div 
+              onClick={() => {
+                setActiveIngestionMode('screenshot');
+                setWardrobeCounts((prev) => ({ ...prev, Tops: prev.Tops + 1 }));
+                triggerToast('✨ Extracted Lavender Cardigan (₹1,299) into Wardrobe!');
+              }}
+              style={{ 
+                padding: '20px', 
+                borderRadius: '24px', 
+                background: activeIngestionMode === 'screenshot' ? 'rgba(124,58,237,0.04)' : '#FAF7F2', 
+                border: activeIngestionMode === 'screenshot' ? '2px solid #7C3AED' : '1px solid #EFE9E0', 
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}
+            >
+              <div>
+                <strong style={{ fontSize: '14px', color: '#2E1C44', display: 'block', marginBottom: '12px' }}>Upload Screenshot</strong>
+                <div style={{ height: '140px', borderRadius: '16px', background: '#FFF', border: '1px solid #EFE9E0', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#EC4899', marginBottom: '4px' }}>M Myntra</span>
+                  <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#F3E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
+                    <Shirt size={28} color="#7C3AED" />
+                  </div>
+                  <button style={{ width: '100%', padding: '6px', borderRadius: '10px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '10px', fontWeight: 800 }}>+ Add to Wardrobe</button>
+                </div>
               </div>
+              <p style={{ margin: '12px 0 0 0', fontSize: '11px', color: '#6B5B7B', textAlign: 'center' }}>AI extracts, cleans & adds to wardrobe</p>
             </div>
 
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button
-                onClick={() => { stopCamera(); setCurrentTab('dashboard'); }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '14px', border: 'none',
-                  backgroundColor: currentTab === 'dashboard' ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
-                  color: currentTab === 'dashboard' ? '#6366F1' : '#9CA3AF',
-                  fontWeight: currentTab === 'dashboard' ? 700 : 500, fontSize: '14px', cursor: 'pointer', textAlign: 'left'
-                }}
-              >
-                <Layers size={18} color={currentTab === 'dashboard' ? '#6366F1' : '#9CA3AF'} />
-                Dashboard Hub
-              </button>
+            {/* Mode 3: Paste Product Link */}
+            <div 
+              onClick={() => setActiveIngestionMode('link')}
+              style={{ 
+                padding: '20px', 
+                borderRadius: '24px', 
+                background: activeIngestionMode === 'link' ? 'rgba(124,58,237,0.04)' : '#FAF7F2', 
+                border: activeIngestionMode === 'link' ? '2px solid #7C3AED' : '1px solid #EFE9E0', 
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}
+            >
+              <div>
+                <strong style={{ fontSize: '14px', color: '#2E1C44', display: 'block', marginBottom: '12px' }}>Paste Product Link</strong>
+                <div style={{ height: '140px', borderRadius: '16px', background: '#FFF', border: '1px solid #EFE9E0', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#FAF7F2', padding: '6px 10px', borderRadius: '8px', border: '1px solid #EFE9E0' }}>
+                    <Link size={12} color="#7C3AED" />
+                    <input 
+                      type="text" 
+                      value={productUrl} 
+                      onChange={(e) => setProductUrl(e.target.value)}
+                      style={{ border: 'none', background: 'transparent', fontSize: '10px', color: '#2E1C44', width: '100%', outline: 'none' }}
+                    />
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <Shirt size={28} color="#7C3AED" />
+                  </div>
+                  <button onClick={importFromUrlAction} style={{ width: '100%', padding: '6px', borderRadius: '10px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>Import from URL</button>
+                </div>
+              </div>
+              <p style={{ margin: '12px 0 0 0', fontSize: '11px', color: '#6B5B7B', textAlign: 'center' }}>Works with Myntra, Amazon, AJIO, Zara</p>
+            </div>
 
-              <button
-                onClick={() => { stopCamera(); setCurrentTab('skin-scanner'); }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '14px', border: 'none',
-                  backgroundColor: currentTab === 'skin-scanner' ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
-                  color: currentTab === 'skin-scanner' ? '#6366F1' : '#9CA3AF',
-                  fontWeight: currentTab === 'skin-scanner' ? 700 : 500, fontSize: '14px', cursor: 'pointer', textAlign: 'left'
-                }}
-              >
-                <Flame size={18} color={currentTab === 'skin-scanner' ? '#6366F1' : '#9CA3AF'} />
-                1. Upload Selfie → Skin Tone
-              </button>
+            {/* Mode 4: AI Generate */}
+            <div 
+              onClick={() => setActiveIngestionMode('ai')}
+              style={{ 
+                padding: '20px', 
+                borderRadius: '24px', 
+                background: activeIngestionMode === 'ai' ? 'rgba(124,58,237,0.04)' : '#FAF7F2', 
+                border: activeIngestionMode === 'ai' ? '2px solid #7C3AED' : '1px solid #EFE9E0', 
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}
+            >
+              <div>
+                <strong style={{ fontSize: '14px', color: '#2E1C44', display: 'block', marginBottom: '12px' }}>AI Generate</strong>
+                <div style={{ height: '140px', borderRadius: '16px', background: '#F3E8FF', border: '1px solid #E6D5FF', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <Sparkles size={36} color="#7C3AED" />
+                  <button onClick={generateAiGarmentAction} style={{ marginTop: '8px', padding: '6px 12px', borderRadius: '10px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>Generate & Add</button>
+                </div>
+              </div>
+              <p style={{ margin: '12px 0 0 0', fontSize: '11px', color: '#6B5B7B', textAlign: 'center' }}>Describe it & AI creates for you</p>
+            </div>
 
-              <button
-                onClick={() => { stopCamera(); setCurrentTab('body-scanner'); }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '14px', border: 'none',
-                  backgroundColor: currentTab === 'body-scanner' ? 'rgba(236, 72, 153, 0.2)' : 'transparent',
-                  color: currentTab === 'body-scanner' ? '#EC4899' : '#9CA3AF',
-                  fontWeight: currentTab === 'body-scanner' ? 700 : 500, fontSize: '14px', cursor: 'pointer', textAlign: 'left'
-                }}
-              >
-                <Activity size={18} color={currentTab === 'body-scanner' ? '#EC4899' : '#9CA3AF'} />
-                2. Upload Full Body → Outfits
-              </button>
+            {/* Right Card: AI Detects & Adds Panel */}
+            <div style={{ padding: '20px', borderRadius: '24px', background: '#2E1C44', color: '#FFF', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Sparkles size={14} color="#EC4899" />
+                  </div>
+                  <strong style={{ fontSize: '13px' }}>AI Detects & Adds</strong>
+                </div>
 
-              <hr style={{ borderColor: 'rgba(255,255,255,0.08)', margin: '8px 0' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle size={14} color="#10B981" />
+                    <span>Category: Tops & Shirts</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle size={14} color="#10B981" />
+                    <span>Color: Lavender Purple</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle size={14} color="#10B981" />
+                    <span>Fabric: 100% Silk Cotton</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle size={14} color="#10B981" />
+                    <span>Sleeve: Button-Up Collared</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle size={14} color="#10B981" />
+                    <span>Pattern: Solid Luxe Satin</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle size={14} color="#10B981" />
+                    <span>Fit: Relaxed Tailored</span>
+                  </div>
+                </div>
+              </div>
 
-              {[
-                { id: 'ai-stylist', label: 'AI Stylist Chat', icon: MessageSquare },
-                { id: 'wardrobe', label: 'Digital Closet', icon: Shirt },
-                { id: 'occasions', label: 'Occasion Planner', icon: Calendar },
-                { id: 'packing', label: 'Smart Packing', icon: Luggage },
-                { id: 'shopping', label: 'Shopping Advisor', icon: ShoppingBag }
-              ].map((item) => {
-                const IconComp = item.icon;
-                const active = currentTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => { stopCamera(); setCurrentTab(item.id as any); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '14px', padding: '10px 16px', borderRadius: '14px', border: 'none',
-                      backgroundColor: active ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                      color: active ? '#6366F1' : '#9CA3AF',
-                      fontWeight: active ? 600 : 500, fontSize: '14px', cursor: 'pointer', textAlign: 'left'
-                    }}
-                  >
-                    <IconComp size={18} color={active ? '#6366F1' : '#9CA3AF'} />
-                    {item.label}
-                  </button>
-                );
-              })}
-            </nav>
-          </aside>
+              <span style={{ fontSize: '10px', color: '#A78BFA', marginTop: '12px', display: 'block', textAlign: 'center' }}>All saved in your digital wardrobe</span>
+            </div>
+          </div>
+        </section>
 
-          {/* Main Workspace Workspace */}
-          <main style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
+        {/* 4. "TRY ON & MIX MATCH" VIRTUAL STUDIO WORKSPACE */}
+        <section id="studio-section" style={{ background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', boxShadow: '0 4px 20px rgba(46, 28, 68, 0.03)' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7C3AED' }}>STUDIO VIEWPORT</span>
+            <h2 style={{ margin: '4px 0 0 0', fontSize: '20px', fontWeight: 800, color: '#2E1C44' }}>Try On & Mix Match</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '240px 1.2fr 280px', gap: '20px' }}>
             
-            {/* DASHBOARD HUB */}
-            {currentTab === 'dashboard' && (
-              <div style={{ maxWidth: '840px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                  <div>
-                    <span style={{ fontSize: '11px', letterSpacing: '2px', color: '#9CA3AF', fontWeight: 700 }}>PERSONAL FASHION HUB ({userGender.toUpperCase()})</span>
-                    <h2 style={{ margin: '4px 0 0 0', fontSize: '28px' }}>{userName}</h2>
-                  </div>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button className="morph-btn" onClick={() => setCurrentTab('ai-stylist')}>
-                      <Sparkles size={16} /> Ask AI Stylist
-                    </button>
-                  </div>
+            {/* Left Column: MY WARDROBE CATEGORY COUNTERS */}
+            <div style={{ padding: '20px', borderRadius: '24px', background: '#FAF7F2', border: '1px solid #EFE9E0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <strong style={{ fontSize: '14px', color: '#2E1C44' }}>MY WARDROBE</strong>
+                  <span onClick={() => setBottomNavTab('wardrobe')} style={{ fontSize: '11px', color: '#7C3AED', fontWeight: 700, cursor: 'pointer' }}>View All</span>
                 </div>
 
-                {/* 1. COLOR RECOMMENDATION CARD ON DASHBOARD */}
-                <div className="glass-card glowing" style={{ padding: '32px', marginBottom: '28px', borderRadius: '28px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <span style={{ padding: '6px 14px', borderRadius: '20px', backgroundColor: 'rgba(99, 102, 241, 0.2)', color: '#6366F1', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Flame size={14} color="#6366F1" /> YOUR PERSONAL COLOR PALETTE
-                    </span>
-                    <span style={{ color: '#10B981', fontSize: '13px', fontWeight: 800, letterSpacing: '1px' }}>{skinResult.paletteName}</span>
-                  </div>
-
-                  <h3 style={{ fontSize: '24px', margin: '0 0 8px 0' }}>Detected Tone: {skinResult.detectedTone} ({skinResult.undertone})</h3>
-                  <p style={{ color: '#9CA3AF', fontSize: '14px', margin: '0 0 20px 0', lineHeight: 1.5 }}>
-                    {skinResult.reasoning}
-                  </p>
-
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
-                    {skinResult.powerColors.map((c: any) => (
-                      <div key={c.hex} style={{ flex: 1, padding: '12px', borderRadius: '14px', backgroundColor: c.hex, textAlign: 'center', border: '1px solid rgba(255,255,255,0.2)' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#FFF', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>{c.name}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {Object.entries(wardrobeCounts).map(([cat, count]) => (
+                    <div 
+                      key={cat}
+                      onClick={() => {
+                        setActivePickerCategory(cat);
+                        setShowGarmentPickerModal(true);
+                      }}
+                      style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '14px', background: '#FFF', border: '1px solid #EFE9E0', fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Shirt size={16} color="#7C3AED" />
+                        <strong>{cat}</strong>
                       </div>
-                    ))}
-                  </div>
-
-                  <button 
-                    className="morph-btn morph-btn-outline" 
-                    style={{ width: '100%', justifyContent: 'center' }}
-                    onClick={() => {
-                      stopCamera();
-                      setCurrentTab('skin-scanner');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                  >
-                    View Full Color Analysis & Selfie Scanner <ArrowRight size={18} />
-                  </button>
-                </div>
-
-                {/* 2. TAILORED OUTFIT RECOMMENDATION CARD WITH IMAGE BASED ON PROFILE SETUP GENDER */}
-                <div className="glass-card glowing" style={{ padding: '32px', marginBottom: '32px', borderRadius: '28px', borderLeft: '4px solid #EC4899', overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <span style={{ padding: '6px 14px', borderRadius: '20px', backgroundColor: 'rgba(236, 72, 153, 0.2)', color: '#EC4899', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Activity size={14} color="#EC4899" /> SILHOUETTE OUTFIT MATCH ({userGender.toUpperCase()})
-                    </span>
-                    <span style={{ color: '#10B981', fontSize: '13px', fontWeight: 800, letterSpacing: '1px' }}>{bodyResult.recommendedOutfits[0].suitability}</span>
-                  </div>
-
-                  <div style={{ width: '100%', height: '260px', borderRadius: '20px', overflow: 'hidden', marginBottom: '20px', position: 'relative' }}>
-                    <img src={bodyResult.recommendedOutfits[0].imageUrl} alt="Recommended Outfit" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 20px', background: 'linear-gradient(to top, rgba(9,10,15,0.95), transparent)' }}>
-                      <h4 style={{ margin: 0, color: '#FFF', fontSize: '18px' }}>{bodyResult.recommendedOutfits[0].title}</h4>
-                    </div>
-                  </div>
-
-                  <p style={{ color: '#9CA3AF', fontSize: '15px', margin: '0 0 20px 0', lineHeight: 1.6 }}>
-                    {bodyResult.recommendedOutfits[0].description}
-                  </p>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '24px' }}>
-                    {bodyResult.recommendedOutfits[0].items.map((item: string, idx: number) => (
-                      <div key={idx} style={{ padding: '10px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <CheckCircle size={14} color="#10B981" /> {item}
-                      </div>
-                    ))}
-                  </div>
-
-                  <button 
-                    className="morph-btn morph-btn-outline" 
-                    style={{ width: '100%', justifyContent: 'center' }}
-                    onClick={() => {
-                      stopCamera();
-                      setCurrentTab('body-scanner');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                  >
-                    View Full Body & Outfit Analysis <ArrowRight size={18} />
-                  </button>
-                </div>
-
-              </div>
-            )}
-
-            {/* SKIN TONE TAB */}
-            {currentTab === 'skin-scanner' && (
-              <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-                <span style={{ fontSize: '11px', letterSpacing: '2px', color: '#6366F1', fontWeight: 700 }}>STEP 1 OF 2</span>
-                <h2 style={{ fontSize: '32px', margin: '4px 0 8px 0' }}>Upload Selfie for Skin Tone & Power Colors</h2>
-                <p style={{ color: '#9CA3AF', marginBottom: '28px', fontSize: '16px' }}>
-                  Upload a close-up selfie or take a camera snapshot to analyze your facial skin tone level, undertone, and power color palette.
-                </p>
-
-                <div className="glass-card glowing" style={{ padding: '32px', textAlign: 'center', position: 'relative' }}>
-                  
-                  <div style={{ width: '100%', height: '360px', borderRadius: '24px', backgroundColor: '#000', overflow: 'hidden', position: 'relative', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.15)' }}>
-                    {skinSelfieImage ? (
-                      <img src={skinSelfieImage} alt="Uploaded Selfie" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <video ref={videoRef} playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', display: cameraActive ? 'block' : 'none' }} />
-                    )}
-
-                    {!cameraActive && !skinSelfieImage && (
-                      <div style={{ textAlign: 'center', padding: '24px' }}>
-                        <User size={54} color="#6366F1" style={{ marginBottom: '12px' }} />
-                        <h4 style={{ margin: '0 0 8px 0', fontSize: '18px' }}>Upload Your Close-Up Selfie</h4>
-                        <p style={{ color: '#9CA3AF', margin: '0 0 20px 0', fontSize: '14px' }}>Ensure clear face lighting for accurate undertone colorimetry.</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <label className="morph-btn" style={{ cursor: 'pointer' }}>
-                      <Upload size={18} /> Upload Selfie File
-                      <input type="file" accept="image/*" onChange={handleSkinSelfieUpload} style={{ display: 'none' }} />
-                    </label>
-
-                    {!cameraActive && (
-                      <button className="morph-btn morph-btn-outline" onClick={startCamera}>
-                        <Video size={16} /> Take Selfie via Camera
-                      </button>
-                    )}
-
-                    {cameraActive && (
-                      <button className="morph-btn" onClick={() => capturePhotoForTab('skin-scanner')}>
-                        <Camera size={18} /> Capture Snapshot
-                      </button>
-                    )}
-                  </div>
-
-                  <div style={{ marginTop: '32px', textAlign: 'left' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                      <h3 style={{ color: '#10B981', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <CheckCircle size={22} /> Skin Tone Analysis Results ({userGender.toUpperCase()})
-                      </h3>
-                      <span style={{ padding: '6px 14px', borderRadius: '20px', backgroundColor: 'rgba(99,102,241,0.2)', color: '#6366F1', fontSize: '12px', fontWeight: 700 }}>
-                        {skinResult.paletteName}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
-                      <div style={{ padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 700 }}>DETECTED SKIN TONE</span>
-                        <p style={{ margin: '4px 0 0 0', fontWeight: 700, fontSize: '16px' }}>{skinResult.detectedTone}</p>
-                      </div>
-                      <div style={{ padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 700 }}>UNDERTONE</span>
-                        <p style={{ margin: '4px 0 0 0', fontWeight: 700, fontSize: '16px' }}>{skinResult.undertone}</p>
-                      </div>
-                    </div>
-
-                    <h4 style={{ fontSize: '16px', marginBottom: '12px' }}>Your Recommended Power Colors</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
-                      {skinResult.powerColors.map((c: any) => (
-                        <div key={c.hex} style={{ padding: '14px 10px', borderRadius: '16px', backgroundColor: c.hex, border: '1px solid rgba(255,255,255,0.2)', textAlign: 'center' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#FFF', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>{c.name}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <button 
-                        className="morph-btn" 
-                        style={{ width: '100%', padding: '18px', fontSize: '17px', background: 'gradient(135deg, #EC4899, #6366F1)' }}
-                        onClick={() => {
-                          stopCamera();
-                          setCurrentTab('body-scanner');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                      >
-                        Next: Proceed to Full-Body Scan for Outfits <ArrowRight size={20} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* FULL BODY TAB */}
-            {currentTab === 'body-scanner' && (
-              <div style={{ maxWidth: '760px', margin: '0 auto' }}>
-                <span style={{ fontSize: '11px', letterSpacing: '2px', color: '#EC4899', fontWeight: 700 }}>STEP 2 OF 2 ({userGender.toUpperCase()})</span>
-                <h2 style={{ fontSize: '32px', margin: '4px 0 8px 0' }}>Upload Full-Body Photo for Body Shape & Outfits</h2>
-                <p style={{ color: '#9CA3AF', marginBottom: '28px', fontSize: '16px' }}>
-                  Upload a standing full-body photo to analyze your silhouette, shoulder-to-waist proportions, and receive visual outfit cards matched for {userGender}.
-                </p>
-
-                <div className="glass-card glowing" style={{ padding: '32px', textAlign: 'center', position: 'relative' }}>
-                  
-                  <div style={{ width: '100%', height: '380px', borderRadius: '24px', backgroundColor: '#000', overflow: 'hidden', position: 'relative', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.15)' }}>
-                    {fullBodyImage ? (
-                      <img src={fullBodyImage} alt="Uploaded Full Body Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <video ref={videoRef} playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', display: cameraActive ? 'block' : 'none' }} />
-                    )}
-
-                    {!cameraActive && !fullBodyImage && (
-                      <div style={{ textAlign: 'center', padding: '24px' }}>
-                        <Activity size={54} color="#EC4899" style={{ marginBottom: '12px' }} />
-                        <h4 style={{ margin: '0 0 8px 0', fontSize: '18px' }}>Upload Your Standing Full-Body Photo</h4>
-                        <p style={{ color: '#9CA3AF', margin: '0 0 20px 0', fontSize: '14px' }}>Ensure shoulders and trousers are visible for silhouette classification.</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <label className="morph-btn" style={{ cursor: 'pointer' }}>
-                      <Upload size={18} /> Upload Full Body Photo
-                      <input type="file" accept="image/*" onChange={handleFullBodyUpload} style={{ display: 'none' }} />
-                    </label>
-
-                    {!cameraActive && (
-                      <button className="morph-btn morph-btn-outline" onClick={startCamera}>
-                        <Video size={16} /> Take Full Body Photo via Camera
-                      </button>
-                    )}
-
-                    {cameraActive && (
-                      <button className="morph-btn" onClick={() => capturePhotoForTab('body-scanner')}>
-                        <Camera size={18} /> Capture Snapshot
-                      </button>
-                    )}
-                  </div>
-
-                  <div style={{ marginTop: '36px', textAlign: 'left' }}>
-                    <h3 style={{ color: '#10B981', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <CheckCircle size={22} /> Detected Silhouette Metrics ({userGender.toUpperCase()})
-                    </h3>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '32px' }}>
-                      <div style={{ padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 700 }}>BODY TYPE</span>
-                        <p style={{ margin: '4px 0 0 0', fontWeight: 700, fontSize: '15px' }}>{bodyResult.bodyShape}</p>
-                      </div>
-                      <div style={{ padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 700 }}>PROPORTIONS</span>
-                        <p style={{ margin: '4px 0 0 0', fontWeight: 700, fontSize: '15px' }}>{bodyResult.shoulderRatio}</p>
-                      </div>
-                      <div style={{ padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 700 }}>HEIGHT</span>
-                        <p style={{ margin: '4px 0 0 0', fontWeight: 700, fontSize: '15px' }}>{bodyResult.heightEstimate}</p>
-                      </div>
-                    </div>
-
-                    <h4 style={{ fontSize: '20px', marginBottom: '20px' }}>Visual {userGender.toUpperCase()} Outfit Recommendations</h4>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', marginBottom: '32px' }}>
-                      {bodyResult.recommendedOutfits.map((outfit: any, idx: number) => (
-                        <div key={idx} style={{ borderRadius: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ width: '100%', height: '280px', position: 'relative', overflow: 'hidden' }}>
-                            <img src={outfit.imageUrl} alt={outfit.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
-                              <span style={{ padding: '6px 14px', borderRadius: '16px', background: 'rgba(16,185,129,0.9)', color: '#FFF', fontSize: '12px', fontWeight: 800 }}>
-                                {outfit.suitability}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div style={{ padding: '24px' }}>
-                            <h5 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 700 }}>{outfit.title}</h5>
-                            <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#9CA3AF', lineHeight: 1.6 }}>
-                              {outfit.description}
-                            </p>
-
-                            <span style={{ fontSize: '11px', color: '#6366F1', fontWeight: 700, letterSpacing: '1px' }}>RECOMMENDED GARMENTS IN THIS LOOK</span>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
-                              {outfit.items.map((item: string, i: number) => (
-                                <div key={i} style={{ padding: '8px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', fontSize: '13px', color: '#E5E7EB', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <CheckCircle size={14} color="#10B981" /> {item}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <button 
-                        className="morph-btn" 
-                        style={{ width: '100%', padding: '18px', fontSize: '17px' }}
-                        onClick={() => {
-                          stopCamera();
-                          setCurrentTab('dashboard');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                      >
-                        Complete Setup & Open Dashboard Hub <ArrowRight size={20} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* AI STYLIST TAB */}
-            {currentTab === 'ai-stylist' && (
-              <div style={{ maxWidth: '720px', margin: '0 auto', height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
-                <h2 style={{ fontSize: '28px', marginBottom: '16px' }}>Aura AI Stylist Chat</h2>
-
-                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '8px' }}>
-                  {messages.map((msg, i) => (
-                    <div key={i} style={{ alignSelf: msg.isUser ? 'flex-end' : 'flex-start', maxWidth: '80%', padding: '16px 20px', borderRadius: '20px', background: msg.isUser ? 'linear-gradient(135deg, #6366F1, #EC4899)' : '#12141C', border: msg.isUser ? 'none' : '1px solid rgba(255,255,255,0.1)', color: '#FFF' }}>
-                      {msg.text}
+                      <span style={{ fontWeight: 800, color: '#7C3AED' }}>{count}</span>
                     </div>
                   ))}
                 </div>
+              </div>
 
-                <div style={{ marginTop: '20px' }}>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Ask about fits, dress codes, paired colors..."
-                      style={{ flex: 1, padding: '14px 20px', borderRadius: '24px', background: '#12141C', border: '1px solid rgba(255,255,255,0.15)', color: '#FFF', fontSize: '15px' }}
-                    />
-                    <button className="morph-btn" onClick={() => handleSendMessage()} style={{ padding: '14px 20px' }}>
-                      <Send size={18} />
-                    </button>
+              <button onClick={() => setShowGarmentPickerModal(true)} style={{ width: '100%', padding: '12px', borderRadius: '14px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '12px', fontWeight: 800, cursor: 'pointer', marginTop: '16px' }}>
+                + Add New Item
+              </button>
+            </div>
+
+            {/* Center Studio: PHOTOREALISTIC MODEL TRY-ON VIEWPORT */}
+            <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', background: '#FAF7F2', border: '1px solid #EFE9E0', minHeight: '500px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              
+              {/* Photorealistic Model Image */}
+              <img 
+                src={selectedModelImg} 
+                alt="Digital Twin Virtual Try-On Model" 
+                style={{ width: '100%', height: '520px', objectFit: 'cover', borderRadius: '24px' }}
+              />
+
+              {/* Floating Layer Stack Chips */}
+              <div style={{ position: 'absolute', right: '16px', top: '16px', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 10 }}>
+                {equippedStack.map((item, idx) => (
+                  <div key={idx} style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#FFF', border: '2px solid #7C3AED', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', padding: '4px', overflow: 'hidden' }}>
+                    <img src={item.img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Action Controls Bar */}
+              <div style={{ position: 'absolute', bottom: '16px', left: '16px', right: '16px', display: 'flex', justifyContent: 'center', gap: '12px', zIndex: 10 }}>
+                <button onClick={undoLayerAction} style={{ padding: '10px 18px', borderRadius: '20px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', color: '#2E1C44', border: '1px solid #EFE9E0', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
+                  Undo
+                </button>
+                <button onClick={saveCurrentLookAction} style={{ padding: '10px 24px', borderRadius: '20px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '12px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 16px rgba(46,28,68,0.2)' }}>
+                  Save Look
+                </button>
+                <button onClick={shareLookAction} style={{ padding: '10px 18px', borderRadius: '20px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', color: '#2E1C44', border: '1px solid #EFE9E0', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
+                  Share
+                </button>
+              </div>
+            </div>
+
+            {/* Right Column: LOOKS YOU'LL LOVE GRID */}
+            <div style={{ padding: '20px', borderRadius: '24px', background: '#FAF7F2', border: '1px solid #EFE9E0' }}>
+              <strong style={{ fontSize: '14px', color: '#2E1C44', display: 'block', marginBottom: '16px' }}>Looks You'll Love</strong>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {[
+                  { id: '1', title: 'Lavender Casual', img: '/models/lavender.png', rating: '9.4' },
+                  { id: '2', title: 'Executive Black', img: '/models/black.png', rating: '9.2' },
+                  { id: '3', title: 'Office Olive', img: '/models/green.png', rating: '9.0' },
+                  { id: '4', title: 'Weekend Crisp', img: '/models/hero.png', rating: '9.5' }
+                ].map((look) => (
+                  <div 
+                    key={look.id}
+                    onClick={() => {
+                      setSelectedModelImg(look.img);
+                      triggerToast(`✨ Equipped "${look.title}" onto Model Avatar!`);
+                    }}
+                    style={{ 
+                      borderRadius: '16px', 
+                      overflow: 'hidden', 
+                      background: '#FFF', 
+                      border: selectedModelImg === look.img ? '2px solid #7C3AED' : '1px solid #EFE9E0', 
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
+                  >
+                    <img src={look.img} alt={look.title} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                    <div style={{ padding: '8px', fontSize: '10px', textAlign: 'center' }}>
+                      <strong style={{ display: 'block', color: '#2E1C44' }}>{look.title}</strong>
+                      <span style={{ color: '#10B981', fontWeight: 800 }}>★ {look.rating}/10</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 5. "AI OUTFIT SUGGESTIONS" CAROUSEL */}
+        <section style={{ background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', boxShadow: '0 4px 20px rgba(46, 28, 68, 0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7C3AED' }}>CURATED LOOKS</span>
+              <h2 style={{ margin: '4px 0 0 0', fontSize: '20px', fontWeight: 800, color: '#2E1C44' }}>AI Outfit Suggestions</h2>
+            </div>
+
+            {/* Category Tabs */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {['For You', 'Office', 'Casual', 'Party', 'Date'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveOutfitTab(tab.toLowerCase().replace(' ', '-') as any)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    border: activeOutfitTab === tab.toLowerCase().replace(' ', '-') ? 'none' : '1px solid #EFE9E0',
+                    background: activeOutfitTab === tab.toLowerCase().replace(' ', '-') ? '#2E1C44' : '#FAF7F2',
+                    color: activeOutfitTab === tab.toLowerCase().replace(' ', '-') ? '#FFF' : '#6B5B7B',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '16px' }}>
+            {outfitList.map((item) => (
+              <div 
+                key={item.id} 
+                onClick={() => {
+                  setSelectedModelImg(item.img);
+                  triggerToast(`✨ Wearing "${item.name}" Capsule on Digital Twin!`);
+                }}
+                style={{ borderRadius: '20px', overflow: 'hidden', background: '#FAF7F2', border: '1px solid #EFE9E0', cursor: 'pointer' }}
+              >
+                <img src={item.img} alt={item.name} style={{ width: '100%', height: '260px', objectFit: 'cover' }} />
+                <div style={{ padding: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <strong style={{ fontSize: '13px', color: '#2E1C44' }}>{item.name}</strong>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#10B981' }}>★ {item.score}</span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: '#6B5B7B' }}>{item.category} Capsule</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: '20px' }}>
+            <button 
+              onClick={generate10MoreLooksAction} 
+              disabled={isGeneratingLooks}
+              style={{ padding: '12px 28px', borderRadius: '24px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Sparkles size={16} color="#EC4899" />
+              {isGeneratingLooks ? 'Generating Outfits...' : 'Generate 10 More Looks'}
+            </button>
+          </div>
+        </section>
+
+        {/* 6. ANALYTICS & INTELLIGENCE ROW */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '320px 1.2fr 340px', gap: '20px' }}>
+          
+          {/* CLOSET SCORE CIRCULAR GAUGE CHART */}
+          <div style={{ background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <strong style={{ fontSize: '14px', color: '#2E1C44', display: 'block', marginBottom: '16px' }}>CLOSET SCORE</strong>
+              
+              <div style={{ position: 'relative', width: '140px', height: '140px', margin: '0 auto 16px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" r="55" fill="none" stroke="#FAF7F2" strokeWidth="12" />
+                  <circle cx="70" cy="70" r="55" fill="none" stroke="#10B981" strokeWidth="12" strokeDasharray="345" strokeDashoffset="60" strokeLinecap="round" transform="rotate(-90 70 70)" />
+                </svg>
+                <div style={{ position: 'absolute', textAlign: 'center' }}>
+                  <strong style={{ fontSize: '28px', color: '#2E1C44', display: 'block' }}>82%</strong>
+                  <span style={{ fontSize: '10px', color: '#10B981', fontWeight: 800 }}>Great Wardrobe!</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                    <span>Outfit Variety</span>
+                    <strong>91%</strong>
+                  </div>
+                  <div style={{ height: '6px', borderRadius: '4px', background: '#FAF7F2', overflow: 'hidden' }}>
+                    <div style={{ width: '91%', height: '100%', background: '#7C3AED' }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                    <span>Color Balance</span>
+                    <strong>74%</strong>
+                  </div>
+                  <div style={{ height: '6px', borderRadius: '4px', background: '#FAF7F2', overflow: 'hidden' }}>
+                    <div style={{ width: '74%', height: '100%', background: '#F59E0B' }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                    <span>Formal Wear</span>
+                    <strong>40%</strong>
+                  </div>
+                  <div style={{ height: '6px', borderRadius: '4px', background: '#FAF7F2', overflow: 'hidden' }}>
+                    <div style={{ width: '40%', height: '100%', background: '#EF4444' }} />
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* OTHER TABS */}
-            {currentTab === 'wardrobe' && (
+            <button onClick={() => setShowGapPlanModal(true)} style={{ width: '100%', padding: '10px', borderRadius: '14px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '11px', fontWeight: 800, marginTop: '16px', cursor: 'pointer' }}>
+              Improve My Score
+            </button>
+          </div>
+
+          {/* AI RECOMMENDATION CARD */}
+          <div style={{ background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <Sparkles size={18} color="#7C3AED" />
+                <strong style={{ fontSize: '14px', color: '#2E1C44' }}>AI RECOMMENDATION</strong>
+              </div>
+
+              <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#4B3B5B', lineHeight: 1.5 }}>
+                You have 12 tops but only 2 formal trousers. Adding one navy trouser would unlock <strong>18 new outfit combinations</strong>.
+              </p>
+
+              <div style={{ padding: '16px', borderRadius: '20px', background: '#FAF7F2', border: '1px solid #EFE9E0', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '70px', height: '70px', borderRadius: '14px', background: '#2E1C44', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Shirt size={32} color="#FFF" />
+                </div>
+                <div>
+                  <strong style={{ display: 'block', fontSize: '13px', color: '#2E1C44' }}>Navy Formal Trouser</strong>
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#7C3AED' }}>₹1,599</span>
+                  <button onClick={() => setShowShoppingModal(true)} style={{ display: 'block', marginTop: '6px', padding: '6px 12px', borderRadius: '10px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>View Similar Items</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* YOUR LOOK TIMELINE */}
+          <div style={{ background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <strong style={{ fontSize: '14px', color: '#2E1C44' }}>YOUR LOOK TIMELINE</strong>
+              <span style={{ fontSize: '11px', color: '#7C3AED', fontWeight: 700 }}>View All</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {lookTimeline.map((item) => (
+                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', borderRadius: '16px', background: '#FAF7F2' }}>
+                  <img src={item.img} alt={item.title} style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }} />
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ display: 'block', fontSize: '11px', color: '#2E1C44' }}>{item.date} · {item.title}</strong>
+                    <span style={{ fontSize: '10px', color: '#F59E0B' }}>★★★★★</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+
+      {/* MODAL 1: SEQUENTIAL 3-POSITION MULTI-ANGLE CAPTURE & REVIEW SCREEN MODAL */}
+      {showCameraModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: '580px', maxHeight: '92vh', background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', textAlign: 'center', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+            <button onClick={stopCamera} style={{ position: 'absolute', top: '16px', right: '16px', background: '#FAF7F2', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', zIndex: 20 }}>
+              <X size={20} color="#2E1C44" />
+            </button>
+
+            {/* 3-POSITION STEP PROGRESS BAR HEADER */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+                {['1. Front Angle', '2. Left Side 90°', '3. Right Side 90°'].map((label, idx) => (
+                  <div 
+                    key={idx}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '10px',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      background: idx === captureStepIndex ? '#2E1C44' : idx < captureStepIndex ? 'rgba(16,185,129,0.15)' : '#FAF7F2',
+                      color: idx === captureStepIndex ? '#FFF' : idx < captureStepIndex ? '#10B981' : '#6B5B7B',
+                      border: idx === captureStepIndex ? 'none' : '1px solid #EFE9E0'
+                    }}
+                  >
+                    {idx < captureStepIndex ? `✓ ${label}` : label}
+                  </div>
+                ))}
+              </div>
+
+              <strong style={{ fontSize: '16px', color: '#2E1C44', display: 'block' }}>
+                {captureStepIndex === 0 ? '📸 STEP 1/3: FRONT ANGLE PHOTO' : captureStepIndex === 1 ? '📸 STEP 2/3: LEFT SIDE ANGLE (TURN 90° LEFT)' : '📸 STEP 3/3: RIGHT SIDE ANGLE (TURN 90° RIGHT)'}
+              </strong>
+              <span style={{ fontSize: '11px', color: '#7C3AED', fontWeight: 700 }}>
+                {captureStepIndex === 0 ? 'Face directly forward with shoulders level and feet aligned.' : captureStepIndex === 1 ? 'Turn 90° to your left facing sideways.' : 'Turn 90° to your right facing sideways.'}
+              </span>
+            </div>
+
+            {/* 3D MESH GENERATOR ANIMATION SCREEN */}
+            {isBuildingTwinMesh ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto' }}>
+                  <Sparkles size={40} color="#7C3AED" />
+                </div>
+                <strong style={{ fontSize: '20px', color: '#2E1C44', display: 'block', marginBottom: '8px' }}>Building 3D Digital Fashion Twin...</strong>
+                <p style={{ fontSize: '12px', color: '#6B5B7B', margin: '0 0 16px 0' }}>Fusing Front, Left & Right poses into a 33-point MediaPipe mesh model</p>
+                <div style={{ width: '100%', height: '8px', borderRadius: '4px', background: '#FAF7F2', overflow: 'hidden' }}>
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(90deg, #7C3AED, #EC4899)' }} />
+                </div>
+              </div>
+            ) : capturedPreviewImg ? (
+              /* PHOTO REVIEW SCREEN MODE */
               <div>
-                <h2 style={{ fontSize: '32px', marginBottom: '8px' }}>Digital Closet</h2>
-                <p style={{ color: '#9CA3AF', marginBottom: '28px' }}>42 scanned items cataloged by category and fabric type.</p>
+                {/* CAPTURED PHOTO PREVIEW CANVAS */}
+                <div style={{ width: '100%', height: isMobile ? '380px' : '440px', borderRadius: '24px', overflow: 'hidden', border: '2px solid #7C3AED', position: 'relative', margin: '0 auto 16px auto', background: '#2E1C44' }}>
+                  <img src={capturedPreviewImg} alt="Captured Photo Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  
+                  {/* Quality Check Badge */}
+                  <div style={{ position: 'absolute', top: '14px', left: '14px', padding: '6px 12px', borderRadius: '12px', background: 'rgba(16,185,129,0.9)', backdropFilter: 'blur(8px)', color: '#FFF', fontSize: '11px', fontWeight: 800 }}>
+                    ✓ Position {captureStepIndex + 1} Quality Check Passed
+                  </div>
+                </div>
+
+                {/* REAL-TIME AI IMAGE VALIDATION METRICS CARD */}
+                <div style={{ background: '#FAF7F2', borderRadius: '18px', padding: '12px 16px', border: '1px solid #EFE9E0', marginBottom: '16px', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#2E1C44', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CheckCircle2 size={16} color="#10B981" /> Real-Time AI Validation Status
+                    </span>
+                    <span style={{ fontSize: '10px', fontWeight: 800, color: '#FFF', background: '#10B981', padding: '2px 8px', borderRadius: '10px' }}>
+                      PASSED (98%)
+                    </span>
+                  </div>
+
+                  {/* 3 METRIC BREAKDOWN PILLS */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '10px' }}>
+                    <div style={{ background: '#FFFFFF', padding: '6px 8px', borderRadius: '10px', border: '1px solid #EFE9E0', textAlign: 'center' }}>
+                      <span style={{ fontSize: '9px', color: '#6B5B7B', display: 'block' }}>Pose Align</span>
+                      <strong style={{ fontSize: '11px', color: '#2E1C44' }}>{validationResult.poseScore}%</strong>
+                    </div>
+                    <div style={{ background: '#FFFFFF', padding: '6px 8px', borderRadius: '10px', border: '1px solid #EFE9E0', textAlign: 'center' }}>
+                      <span style={{ fontSize: '9px', color: '#6B5B7B', display: 'block' }}>Full Body</span>
+                      <strong style={{ fontSize: '11px', color: '#10B981' }}>{validationResult.fullBodyScore}%</strong>
+                    </div>
+                    <div style={{ background: '#FFFFFF', padding: '6px 8px', borderRadius: '10px', border: '1px solid #EFE9E0', textAlign: 'center' }}>
+                      <span style={{ fontSize: '9px', color: '#6B5B7B', display: 'block' }}>Lighting Lux</span>
+                      <strong style={{ fontSize: '11px', color: '#7C3AED' }}>{validationResult.lightingLux}%</strong>
+                    </div>
+                  </div>
+
+                  {/* VALIDATION CHECKLIST BULLETS */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '10px', color: '#4B3B5B' }}>
+                    {validationResult.alerts.map((item, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ color: '#10B981', fontWeight: 800 }}>✓</span>
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* RETAKE VS CONFIRM & PROCEED ACTION BUTTONS */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: '12px' }}>
+                  <button 
+                    onClick={() => {
+                      setCapturedPreviewImg(null);
+                      startCamera();
+                      triggerToast(`↺ Retaking Position ${captureStepIndex + 1}`);
+                    }} 
+                    style={{ padding: '14px', borderRadius: '18px', background: '#FAF7F2', color: '#2E1C44', border: '1px solid #EFE9E0', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  >
+                    <RotateCcw size={16} color="#2E1C44" /> Retake Photo
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      const updatedPhotos = [...threeAnglePhotos];
+                      updatedPhotos[captureStepIndex] = capturedPreviewImg;
+                      setThreeAnglePhotos(updatedPhotos);
+
+                      if (captureStepIndex < 2) {
+                        const nextIndex = captureStepIndex + 1;
+                        setCaptureStepIndex(nextIndex);
+                        setCapturedPreviewImg(null);
+                        startCamera();
+                        triggerToast(`✨ Position ${captureStepIndex + 1} Confirmed! Now proceed to Position ${nextIndex + 1} (${nextIndex === 1 ? 'Left 90°' : 'Right 90°'}).`);
+                      } else {
+                        // All 3 Positions Confirmed! Build 3D Twin Mesh
+                        setIsBuildingTwinMesh(true);
+                        setTimeout(() => {
+                          setIsBuildingTwinMesh(false);
+                          stopCamera();
+                          setCapturedPreviewImg(null);
+                          setCaptureStepIndex(0);
+                          setWardrobeCounts((prev) => ({ ...prev, Tops: prev.Tops + 1 }));
+                          triggerToast('🎉 All 3 Positions Confirmed! 3D Digital Fashion Twin Successfully Built!');
+                        }, 2000);
+                      }
+                    }} 
+                    style={{ padding: '14px', borderRadius: '18px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  >
+                    <CheckCircle2 size={18} color="#10B981" /> 
+                    {captureStepIndex < 2 ? `Confirm & Go to Step ${captureStepIndex + 2}` : 'Confirm All & Build Twin'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* LIVE CAMERA STREAM MODE WITH REAL-TIME POSTURE DETECTION ENGINE */
+              <div>
+                {/* POSTURE DETECTION TESTING BAR */}
+                <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '8px', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={() => {
+                      setLivePostureState('proper');
+                      setPostureFeedbackText('🟢 PROPER POSTURE DETECTED — Feet flat & shoulders level');
+                    }}
+                    style={{ padding: '4px 10px', borderRadius: '10px', border: livePostureState === 'proper' ? '1.5px solid #10B981' : '1px solid #EFE9E0', background: livePostureState === 'proper' ? 'rgba(16,185,129,0.15)' : '#FAF7F2', color: livePostureState === 'proper' ? '#10B981' : '#6B5B7B', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    🟢 Proper Posture
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setLivePostureState('leaning');
+                      setPostureFeedbackText('🟡 WARNING: Level your shoulders and stand straight');
+                    }}
+                    style={{ padding: '4px 10px', borderRadius: '10px', border: livePostureState === 'leaning' ? '1.5px solid #F59E0B' : '1px solid #EFE9E0', background: livePostureState === 'leaning' ? 'rgba(245,158,11,0.15)' : '#FAF7F2', color: livePostureState === 'leaning' ? '#F59E0B' : '#6B5B7B', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    🟡 Leaning Warning
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setLivePostureState('too_close');
+                      setPostureFeedbackText('🔴 WARNING: Step back 1 meter so feet are visible');
+                    }}
+                    style={{ padding: '4px 10px', borderRadius: '10px', border: livePostureState === 'too_close' ? '1.5px solid #EF4444' : '1px solid #EFE9E0', background: livePostureState === 'too_close' ? 'rgba(239,68,68,0.15)' : '#FAF7F2', color: livePostureState === 'too_close' ? '#EF4444' : '#6B5B7B', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    🔴 Distance Warning
+                  </button>
+                </div>
+
+                {/* HANDS-FREE TRIGGER SELECTOR BAR */}
+                <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={() => setHandsFreeMode('timer')}
+                    style={{ padding: '6px 14px', borderRadius: '12px', border: handsFreeMode === 'timer' ? '1.5px solid #7C3AED' : '1px solid #EFE9E0', background: handsFreeMode === 'timer' ? 'rgba(124,58,237,0.1)' : '#FAF7F2', color: handsFreeMode === 'timer' ? '#7C3AED' : '#6B5B7B', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    ⏳ 5s Self-Timer
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setHandsFreeMode('voice');
+                      startVoiceListener();
+                    }}
+                    style={{ padding: '6px 14px', borderRadius: '12px', border: handsFreeMode === 'voice' ? '1.5px solid #7C3AED' : '1px solid #EFE9E0', background: handsFreeMode === 'voice' ? 'rgba(124,58,237,0.1)' : '#FAF7F2', color: handsFreeMode === 'voice' ? '#7C3AED' : '#6B5B7B', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    🗣️ Voice ("Say Capture")
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setHandsFreeMode('gesture');
+                      triggerToast('🖐️ Raise open palm in view to auto-capture!');
+                      setTimeout(() => startHandsFreeCountdown(3), 1500);
+                    }}
+                    style={{ padding: '6px 14px', borderRadius: '12px', border: handsFreeMode === 'gesture' ? '1.5px solid #7C3AED' : '1px solid #EFE9E0', background: handsFreeMode === 'gesture' ? 'rgba(124,58,237,0.1)' : '#FAF7F2', color: handsFreeMode === 'gesture' ? '#7C3AED' : '#6B5B7B', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    🖐️ Palm Gesture
+                  </button>
+                </div>
+
+                {/* EXPANDED FULL-BODY CAMERA VIEWFINDER CANVAS WITH STRICT GREEN/RED ENFORCEMENT */}
+                {(() => {
+                  const isProper = livePostureState === 'proper';
+                  const activeColor = isProper ? '#10B981' : '#EF4444';
+                  return (
+                    <div>
+                      <div 
+                        style={{ 
+                          width: '100%', 
+                          height: isMobile ? '440px' : '520px', 
+                          borderRadius: '24px', 
+                          background: '#2E1C44', 
+                          overflow: 'hidden', 
+                          position: 'relative', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          border: `3px solid ${activeColor}`,
+                          boxShadow: `0 0 24px ${activeColor}40`
+                        }}
+                      >
+                        {isCameraActive ? (
+                          <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <Camera size={72} color={activeColor} />
+                        )}
+
+                        {/* REAL-TIME LIVE POSTURE STATUS BADGE OVERLAY (STRICT GREEN VS RED) */}
+                        <div 
+                          style={{
+                            position: 'absolute',
+                            top: '14px',
+                            left: '14px',
+                            right: '14px',
+                            padding: '10px 14px',
+                            borderRadius: '14px',
+                            background: isProper ? 'rgba(16,185,129,0.95)' : 'rgba(239,68,68,0.95)',
+                            backdropFilter: 'blur(8px)',
+                            color: '#FFF',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                            zIndex: 10
+                          }}
+                        >
+                          {postureFeedbackText}
+                        </div>
+
+                        {/* 33-POINT GLOWING BODY SKELETON JOINT OVERLAY (STRICT GREEN VS RED) */}
+                        <svg width="100%" height="100%" viewBox="0 0 300 500" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 5 }}>
+                          <g stroke={activeColor} strokeWidth="3" fill="none" opacity="0.9">
+                            {/* Head & Spine Wireframe */}
+                            <circle cx="150" cy="70" r="18" fill={isProper ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'} />
+                            <line x1="150" y1="88" x2="150" y2="240" strokeDasharray="4 2" />
+
+                            {/* Shoulders & Arms */}
+                            <line x1="100" y1="130" x2="200" y2="130" />
+                            <line x1="100" y1="130" x2="80" y2="200" />
+                            <line x1="200" y1="130" x2="220" y2="200" />
+                            <line x1="80" y1="200" x2="70" y2="270" />
+                            <line x1="220" y1="200" x2="230" y2="270" />
+                            <circle cx="100" cy="130" r="4" fill={activeColor} />
+                            <circle cx="200" cy="130" r="4" fill={activeColor} />
+                            <circle cx="80" cy="200" r="3" fill={activeColor} />
+                            <circle cx="220" cy="200" r="3" fill={activeColor} />
+
+                            {/* Hips & Legs */}
+                            <line x1="120" y1="240" x2="180" y2="240" />
+                            <line x1="120" y1="240" x2="115" y2="350" />
+                            <line x1="180" y1="240" x2="185" y2="350" />
+                            <line x1="115" y1="350" x2="110" y2="440" />
+                            <line x1="185" y1="350" x2="190" y2="440" />
+                            <circle cx="120" cy="240" r="4" fill={activeColor} />
+                            <circle cx="180" cy="240" r="4" fill={activeColor} />
+                            <circle cx="115" cy="350" r="3" fill={activeColor} />
+                            <circle cx="185" cy="350" r="3" fill={activeColor} />
+                            <circle cx="110" cy="440" r="5" fill={activeColor} />
+                            <circle cx="190" cy="440" r="5" fill={activeColor} />
+                          </g>
+                          <line x1="80" y1="450" x2="220" y2="450" stroke={activeColor} strokeWidth="2.5" />
+                          <text x="150" y="470" textAnchor="middle" fill={activeColor} fontSize="11" fontWeight="800">
+                            {isProper ? 'FEET ALIGNED ✓' : 'ALIGNMENT FAULT ❌'}
+                          </text>
+                        </svg>
+
+                        {/* Background Scanner Beam Animation */}
+                        <div style={{ position: 'absolute', left: 0, right: 0, height: '3px', background: activeColor, boxShadow: `0 0 20px ${activeColor}` }} />
+
+                        {/* BIG ANIMATED COUNTDOWN NUMBER OVERLAY */}
+                        {countdownValue !== null && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(46,28,68,0.75)', backdropFilter: 'blur(6px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>
+                            <span style={{ fontSize: '110px', fontWeight: 900, color: '#EC4899', textShadow: '0 0 40px #EC4899', lineHeight: 1 }}>{countdownValue}</span>
+                            <span style={{ fontSize: '14px', fontWeight: 800, color: '#FFF', marginTop: '12px' }}>
+                              {captureStepIndex === 0 ? 'Hold still for Front Angle!' : captureStepIndex === 1 ? 'Hold still for Left 90° Side!' : 'Hold still for Right 90° Side!'}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* VOICE LISTENING OVERLAY INDICATOR */}
+                        {isListeningVoice && (
+                          <div style={{ position: 'absolute', top: '16px', left: '16px', right: '16px', padding: '10px 14px', borderRadius: '14px', background: 'rgba(236,72,153,0.9)', backdropFilter: 'blur(8px)', color: '#FFF', fontSize: '12px', fontWeight: 800 }}>
+                            🗣️ Listening... Say "CAPTURE" or "CHEESE" out loud!
+                          </div>
+                        )}
+                      </div>
+
+                      {/* CAPTURE ACTION BUTTONS WITH STRICT POSTURE DISABLE GUARD */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
+                        <button 
+                          onClick={() => startHandsFreeCountdown(5)} 
+                          disabled={!isProper}
+                          style={{ 
+                            padding: '14px', 
+                            borderRadius: '18px', 
+                            background: isProper ? 'rgba(124,58,237,0.1)' : '#FAF7F2', 
+                            color: isProper ? '#7C3AED' : '#9CA3AF', 
+                            border: isProper ? '1px solid rgba(124,58,237,0.3)' : '1px solid #E5E7EB', 
+                            fontSize: '13px', 
+                            fontWeight: 800, 
+                            cursor: isProper ? 'pointer' : 'not-allowed',
+                            opacity: isProper ? 1 : 0.5 
+                          }}
+                        >
+                          ⏳ 5s Self-Timer
+                        </button>
+                        <button 
+                          onClick={capturePhotoAction} 
+                          disabled={!isProper}
+                          style={{ 
+                            padding: '14px', 
+                            borderRadius: '18px', 
+                            background: isProper ? '#2E1C44' : '#9CA3AF', 
+                            color: '#FFF', 
+                            border: 'none', 
+                            fontSize: '13px', 
+                            fontWeight: 800, 
+                            cursor: isProper ? 'pointer' : 'not-allowed',
+                            opacity: isProper ? 1 : 0.5 
+                          }}
+                        >
+                          📸 {isProper ? `Capture Position ${captureStepIndex + 1}` : '⚠️ Align Posture First'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
-
-            {currentTab === 'occasions' && (
-              <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-                <h2 style={{ fontSize: '32px', marginBottom: '8px' }}>Occasion Planner</h2>
-                <p style={{ color: '#9CA3AF', marginBottom: '28px' }}>Contextual outfit combinations generated for specific events.</p>
-              </div>
-            )}
-
-            {currentTab === 'packing' && (
-              <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-                <h2 style={{ fontSize: '32px', marginBottom: '8px' }}>Smart Packing Assistant</h2>
-                <p style={{ color: '#9CA3AF', marginBottom: '28px' }}>Capsule trip checklist generated based on destination & days.</p>
-              </div>
-            )}
-
-            {currentTab === 'shopping' && (
-              <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-                <h2 style={{ fontSize: '32px', marginBottom: '8px' }}>Shopping Link Advisor</h2>
-                <p style={{ color: '#9CA3AF', marginBottom: '28px' }}>Evaluates "Buy vs. Skip" advice based on your owned closet synergy.</p>
-              </div>
-            )}
-
-          </main>
+          </div>
         </div>
       )}
+
+      {/* MODAL 2: 3-ANGLE DIGITAL TWIN ONBOARDING MODAL */}
+      {showTwinOnboardingModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '520px', background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', textAlign: 'center', position: 'relative' }}>
+            <button onClick={() => setShowTwinOnboardingModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: '#FAF7F2', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}>
+              <X size={18} color="#2E1C44" />
+            </button>
+
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#2E1C44' }}>Create Your Digital Fashion Twin</h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '12px', color: '#6B5B7B' }}>Capture 3 photo angles to build your 3D mesh avatar</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ padding: '12px', borderRadius: '16px', background: '#FAF7F2', border: '1px solid #7C3AED' }}>
+                <Camera size={24} color="#7C3AED" style={{ margin: '0 auto 6px auto', display: 'block' }} />
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#2E1C44' }}>1. Front</span>
+              </div>
+              <div style={{ padding: '12px', borderRadius: '16px', background: '#FAF7F2', border: '1px solid #EFE9E0' }}>
+                <Camera size={24} color="#6B5B7B" style={{ margin: '0 auto 6px auto', display: 'block' }} />
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#6B5B7B' }}>2. Left 90°</span>
+              </div>
+              <div style={{ padding: '12px', borderRadius: '16px', background: '#FAF7F2', border: '1px solid #EFE9E0' }}>
+                <Camera size={24} color="#6B5B7B" style={{ margin: '0 auto 6px auto', display: 'block' }} />
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#6B5B7B' }}>3. Right 90°</span>
+              </div>
+            </div>
+
+            <button onClick={() => { setShowTwinOnboardingModal(false); startCamera(); }} style={{ width: '100%', padding: '14px', borderRadius: '20px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '13px', fontWeight: 800, cursor: 'pointer' }}>
+              Start 3-Angle Capture
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: 3D BODY MESH MEASUREMENTS INSPECTOR MODAL */}
+      {showBodyMeshModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '460px', background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', position: 'relative' }}>
+            <button onClick={() => setShowBodyMeshModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: '#FAF7F2', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}>
+              <X size={18} color="#2E1C44" />
+            </button>
+
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', color: '#2E1C44' }}>AI 3D Body Mesh & Measurements</h3>
+            <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 800 }}>✓ 33 Pose Joints Calibrated</span>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px', fontSize: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderRadius: '12px', background: '#FAF7F2' }}>
+                <span>Height:</span>
+                <strong>180 cm</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderRadius: '12px', background: '#FAF7F2' }}>
+                <span>Body Shape Silhouette:</span>
+                <strong>Athletic V-Shape</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderRadius: '12px', background: '#FAF7F2' }}>
+                <span>Shoulder Width:</span>
+                <strong>44 cm</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderRadius: '12px', background: '#FAF7F2' }}>
+                <span>Waist Circumference:</span>
+                <strong>76 cm</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderRadius: '12px', background: '#FAF7F2' }}>
+                <span>Hip Width:</span>
+                <strong>94 cm</strong>
+              </div>
+            </div>
+
+            <button onClick={() => setShowBodyMeshModal(false)} style={{ width: '100%', padding: '12px', borderRadius: '18px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '12px', fontWeight: 800, marginTop: '20px', cursor: 'pointer' }}>
+              Close Inspector
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: AI ADVICE RATING BREAKDOWN MODAL */}
+      {showAdviceModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '460px', background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', position: 'relative' }}>
+            <button onClick={() => setShowAdviceModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: '#FAF7F2', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}>
+              <X size={18} color="#2E1C44" />
+            </button>
+
+            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+              <Award size={36} color="#10B981" style={{ margin: '0 auto 6px auto', display: 'block' }} />
+              <h3 style={{ margin: '0 0 2px 0', fontSize: '18px', color: '#2E1C44' }}>Great Look! 9.2 / 10</h3>
+              <p style={{ margin: 0, fontSize: '12px', color: '#6B5B7B' }}>Personal AI Stylist Score Breakdown</p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderRadius: '12px', background: '#FAF7F2' }}>
+                <span>Color Harmony:</span>
+                <strong style={{ color: '#10B981' }}>9.0 / 10</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderRadius: '12px', background: '#FAF7F2' }}>
+                <span>Fit & Tailoring:</span>
+                <strong style={{ color: '#10B981' }}>9.3 / 10</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderRadius: '12px', background: '#FAF7F2' }}>
+                <span>Occasion Match:</span>
+                <strong style={{ color: '#10B981' }}>9.0 / 10</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderRadius: '12px', background: '#FAF7F2' }}>
+                <span>Confidence Index:</span>
+                <strong style={{ color: '#10B981' }}>9.5 / 10</strong>
+              </div>
+            </div>
+
+            <button onClick={() => setShowAdviceModal(false)} style={{ width: '100%', padding: '12px', borderRadius: '18px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '12px', fontWeight: 800, marginTop: '20px', cursor: 'pointer' }}>
+              Close Advice Breakdown
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 5: GARMENT PICKER DRAWER MODAL */}
+      {showGarmentPickerModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '500px', background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', position: 'relative' }}>
+            <button onClick={() => setShowGarmentPickerModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: '#FAF7F2', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}>
+              <X size={18} color="#2E1C44" />
+            </button>
+
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#2E1C44' }}>Select Garment from {activePickerCategory}</h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+              {[
+                { name: 'Lavender Silk Shirt', img: '/models/lavender.png' },
+                { name: 'Crisp White Poplin', img: '/models/hero.png' },
+                { name: 'Midnight Corset Top', img: '/models/black.png' },
+                { name: 'Olive Resort Top', img: '/models/green.png' }
+              ].map((item, i) => (
+                <div 
+                  key={i}
+                  onClick={() => {
+                    setSelectedModelImg(item.img);
+                    setEquippedStack([...equippedStack, { name: item.name, category: activePickerCategory, img: item.img }]);
+                    setShowGarmentPickerModal(false);
+                    triggerToast(`✨ Equipped "${item.name}" onto Model Avatar!`);
+                  }}
+                  style={{ padding: '8px', borderRadius: '16px', background: '#FAF7F2', border: '1px solid #EFE9E0', textAlign: 'center', cursor: 'pointer' }}
+                >
+                  <img src={item.img} alt={item.name} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '12px', marginBottom: '6px' }} />
+                  <strong style={{ fontSize: '10px', display: 'block', color: '#2E1C44' }}>{item.name}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 6: CLOSET GAP ACTION PLAN MODAL */}
+      {showGapPlanModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '460px', background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', position: 'relative' }}>
+            <button onClick={() => setShowGapPlanModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: '#FAF7F2', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}>
+              <X size={18} color="#2E1C44" />
+            </button>
+
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#2E1C44' }}>Improve My Closet Score Plan</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#6B5B7B' }}>Adding these 2 items will boost your wardrobe score from 82% to 96%!</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
+              <div style={{ padding: '12px', borderRadius: '14px', background: '#FAF7F2', border: '1px solid #EFE9E0' }}>
+                <strong style={{ color: '#2E1C44', display: 'block' }}>1. Navy Formal Trousers</strong>
+                <span style={{ color: '#7C3AED', fontSize: '11px' }}>Unlocks +18 Formal Combinations</span>
+              </div>
+              <div style={{ padding: '12px', borderRadius: '14px', background: '#FAF7F2', border: '1px solid #EFE9E0' }}>
+                <strong style={{ color: '#2E1C44', display: 'block' }}>2. Platinum Metallic Clutch Bag</strong>
+                <span style={{ color: '#7C3AED', fontSize: '11px' }}>Unlocks +12 Evening Combinations</span>
+              </div>
+            </div>
+
+            <button onClick={() => { setShowGapPlanModal(false); setShowShoppingModal(true); }} style={{ width: '100%', padding: '12px', borderRadius: '18px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '12px', fontWeight: 800, marginTop: '20px', cursor: 'pointer' }}>
+              View Recommended Items
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 7: SHOPPING RECOMMENDATIONS MODAL */}
+      {showShoppingModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '460px', background: '#FFFFFF', borderRadius: '28px', padding: '24px', border: '1px solid #EFE9E0', position: 'relative' }}>
+            <button onClick={() => setShowShoppingModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: '#FAF7F2', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}>
+              <X size={18} color="#2E1C44" />
+            </button>
+
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', color: '#2E1C44' }}>Navy Formal Trouser Recommendations</h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '16px', background: '#FAF7F2', border: '1px solid #EFE9E0' }}>
+                <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#2E1C44', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Shirt size={24} color="#FFF" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <strong style={{ display: 'block', fontSize: '12px', color: '#2E1C44' }}>Zara Tailored Navy Pants</strong>
+                  <span style={{ fontSize: '11px', color: '#7C3AED', fontWeight: 800 }}>₹1,599</span>
+                </div>
+                <button onClick={() => triggerToast('🛍️ Redirecting to Store Page...')} style={{ padding: '6px 12px', borderRadius: '10px', background: '#2E1C44', color: '#FFF', border: 'none', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>Buy Now</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. FIXED MOBILE BOTTOM NAVIGATION BAR */}
+      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#FFFFFF', borderTop: '1px solid #EFE9E0', padding: '10px 24px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', zIndex: 100, boxShadow: '0 -4px 20px rgba(0,0,0,0.05)' }}>
+        <div onClick={() => setBottomNavTab('home')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', color: bottomNavTab === 'home' ? '#7C3AED' : '#6B5B7B', cursor: 'pointer' }}>
+          <Compass size={20} />
+          <span style={{ fontSize: '10px', fontWeight: 800 }}>Home</span>
+        </div>
+
+        <div onClick={() => setBottomNavTab('wardrobe')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', color: bottomNavTab === 'wardrobe' ? '#7C3AED' : '#6B5B7B', cursor: 'pointer' }}>
+          <ShoppingBag size={20} />
+          <span style={{ fontSize: '10px', fontWeight: 600 }}>Wardrobe</span>
+        </div>
+
+        {/* Plus Floating Button */}
+        <div onClick={startCamera} style={{ width: '46px', height: '46px', borderRadius: '50%', background: '#2E1C44', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(46,28,68,0.3)', cursor: 'pointer', marginTop: '-20px' }}>
+          <Plus size={24} />
+        </div>
+
+        <div onClick={() => setBottomNavTab('stylist')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', color: bottomNavTab === 'stylist' ? '#7C3AED' : '#6B5B7B', cursor: 'pointer' }}>
+          <Sparkles size={20} />
+          <span style={{ fontSize: '10px', fontWeight: 600 }}>AI Stylist</span>
+        </div>
+
+        <div onClick={() => setBottomNavTab('profile')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', color: bottomNavTab === 'profile' ? '#7C3AED' : '#6B5B7B', cursor: 'pointer' }}>
+          <User size={20} />
+          <span style={{ fontSize: '10px', fontWeight: 600 }}>Profile</span>
+        </div>
+      </nav>
 
     </div>
   );

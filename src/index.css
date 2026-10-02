@@ -1,8 +1,14 @@
 :root {
   --bg-dark: #090a0f;
+  --bg-cream: #FAF7F2;
   --surface-dark: #12141c;
+  --surface-cream: #FFFFFF;
   --surface-glass: rgba(255, 255, 255, 0.05);
   --glass-border: rgba(255, 255, 255, 0.12);
+  --border-cream: #EFE9E0;
+  --brand-plum: #2E1C44;
+  --brand-lavender: #7C3AED;
+  --brand-pink: #EC4899;
   --aura-violet: #6366f1;
   --aura-rose: #ec4899;
   --aura-cyan: #06b6d4;
@@ -17,8 +23,8 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--bg-dark);
-  color: #f9fafb;
+  background-color: var(--bg-cream);
+  color: var(--brand-plum);
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -27,26 +33,27 @@ body {
 h1, h2, h3, h4, h5 {
   font-family: 'Outfit', sans-serif;
   letter-spacing: -0.03em;
+  color: var(--brand-plum);
 }
 
 /* Glassmorphism utility card */
 .glass-card {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: #FFFFFF;
+  border: 1px solid var(--border-cream);
   border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(46, 28, 68, 0.04);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(124, 58, 237, 0.3);
+  box-shadow: 0 10px 30px rgba(46, 28, 68, 0.08);
   transform: translateY(-2px);
 }
 
 .glass-card.glowing {
-  box-shadow: 0 0 32px -4px rgba(99, 102, 241, 0.35);
-  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 32px -4px rgba(124, 58, 237, 0.15);
+  border-color: rgba(124, 58, 237, 0.4);
 }
 
 /* Morphing interactive button */
